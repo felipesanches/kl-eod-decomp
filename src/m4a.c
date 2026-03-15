@@ -54,12 +54,19 @@ INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050042);
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050094);
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_080500c8);
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_080500fc);
-INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0805012a);
+/*
+ * Wrapper that calls FUN_0804ff08 to stop/reset a sound channel.
+ * Passes through r0 (sound struct pointer).
+ *   r0: pointer to sound struct
+ *   no return value
+ */
+void StopSoundChannel(u32 r0) {
+    FUN_0804ff08(r0);
+}
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050134);
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050162);
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_080501ba);
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050200);
-INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050236);
 /*
  * Calls FUN_0805186c with the given parameter and a global sound context
  * pointer from 0x030064D8 as the second argument.
