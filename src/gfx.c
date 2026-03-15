@@ -64,7 +64,17 @@ INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c0ec);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c1a0);
 INCLUDE_ASM("asm/nonmatchings/gfx", sub_0804C1C0);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c1fc);
-INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c230);
+/*
+ * Reads a command byte from the data stream and processes it via FUN_0804c218.
+ * Byte[2] is the command argument. Advances the stream pointer by 3.
+ *   no parameters (reads from global data stream pointer at 0x03004D84)
+ *   no return value
+ */
+void ProcessStreamCommand_C218(void) {
+    u8 **gp = (u8 **)0x03004D84;
+    FUN_0804c218((*gp)[2]);
+    *gp += 3;
+}
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c24c);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c300);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c3a4);
