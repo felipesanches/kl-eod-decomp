@@ -58,7 +58,15 @@ INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050236);
 void PlaySoundWithContext_D8(u32 r0) {
     FUN_0805186c(r0, *(u32 *)0x030064D8);
 }
-INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050330);
+/*
+ * Calls FUN_0805186c with the given parameter and a global sound context
+ * pointer from 0x030064DC as the second argument.
+ *   r0: first argument passed through to FUN_0805186c
+ *   no return value
+ */
+void PlaySoundWithContext_DC(u32 r0) {
+    FUN_0805186c(r0, *(u32 *)0x030064DC);
+}
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050344);
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0805043c);
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_080504e0);
