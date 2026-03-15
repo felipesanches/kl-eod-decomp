@@ -14,6 +14,9 @@ asm/nonmatchings/
 asm/matchings/
 data/data.s
 
+# Generated linker script (make ldscript.txt)
+ldscript.txt
+
 # Generated context (make ctx)
 ctx.c
 ctx.c.m2c

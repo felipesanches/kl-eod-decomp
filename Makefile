@@ -62,7 +62,9 @@ ASFLAGS  := -mcpu=arm7tdmi -mthumb-interwork
 CPPFLAGS := -nostdinc -I tools/agbcc/include -iquote include
 CC1FLAGS := -mthumb-interwork -Wimplicit -Wparentheses -O2 -fhex-asm
 
-LDSCRIPT := ldscript.txt
+DECOMP_TOML := klonoa-eod-decomp.toml
+LDSCRIPT    := ldscript.txt
+LDSCRIPT_IN := ldscript.in.txt
 
 LIBS := tools/agbcc/lib/libgcc.a tools/agbcc/lib/libc.a
 
@@ -89,12 +91,16 @@ compare: rom
 
 rom: $(ROM)
 
-$(ELF): $(OBJS)
+$(ELF): $(OBJS) $(LDSCRIPT)
 	@echo "$(LD) -T $(LDSCRIPT) -Map $(MAP) <objects> -o $@"
 	@cd $(OBJ_DIR) && $(LD) -T ../$(LDSCRIPT) -Map ../$(MAP) $(OBJS_REL) -o ../$(ELF)
 
 $(ROM): $(ELF)
 	$(OBJCOPY) -O binary $< $@
+
+# Generate ldscript.txt by prepending symbol aliases from the TOML [renames] section
+$(LDSCRIPT): $(LDSCRIPT_IN) $(DECOMP_TOML)
+	@python3 scripts/generate_ldscript.py $(DECOMP_TOML) $(LDSCRIPT_IN) $(LDSCRIPT)
 
 ### RECIPES ###
 
