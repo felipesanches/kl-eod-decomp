@@ -79,7 +79,22 @@ INCLUDE_ASM("asm/nonmatchings/code_3", FUN_0804517c);
 INCLUDE_ASM("asm/nonmatchings/code_3", FUN_080452ea);
 INCLUDE_ASM("asm/nonmatchings/code_3", FUN_0804539a);
 INCLUDE_ASM("asm/nonmatchings/code_3", FUN_080453f0);
-INCLUDE_ASM("asm/nonmatchings/code_3", FUN_08045734);
+/*
+ * Runs the per-frame game update. If the pause flag at 0x030034E4 is zero,
+ * calls four game subsystem update functions. Always calls FUN_08025ba4
+ * at the end regardless of pause state.
+ *   no parameters
+ *   no return value
+ */
+void GameUpdate(void) {
+    if (*(u8 *)0x030034E4 == 0) {
+        FUN_080468b0();
+        FUN_08045874();
+        FUN_08045f68();
+        FUN_08046288();
+    }
+    FUN_08025ba4();
+}
 INCLUDE_ASM("asm/nonmatchings/code_3", FUN_0804575c);
 INCLUDE_ASM("asm/nonmatchings/code_3", FUN_08045874);
 INCLUDE_ASM("asm/nonmatchings/code_3", FUN_08045f68);
