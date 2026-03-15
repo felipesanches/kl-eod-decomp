@@ -3,7 +3,18 @@
 
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804eb64);
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804ed68);
-INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804ee14);
+/*
+ * Frees a sound data structure and its inner buffer.
+ * Reads the struct pointer from 0x0300081C, frees *(struct) - 4 (inner buffer
+ * with header), then frees the struct pointer itself.
+ *   no parameters
+ *   no return value
+ */
+void FreeSoundStruct(void) {
+    u32 *p = (u32 *)0x0300081C;
+    thunk_FUN_0800020c(*(u32 *)(*p) - 4);
+    thunk_FUN_0800020c(*p);
+}
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804ee34);
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804ee60);
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804ef50);
