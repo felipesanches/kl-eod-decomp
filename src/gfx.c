@@ -15,12 +15,22 @@ INCLUDE_ASM("asm/nonmatchings/gfx", FUN_08049efc);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804a070);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804af00);
 
-// Reads a u16 from a potentially unaligned address (byte-by-byte, little-endian)
+/*
+ * Reads an unsigned 16-bit value from a potentially unaligned address.
+ * Assembles two bytes in little-endian order.
+ *   ptr: pointer to the first of two consecutive bytes
+ *   returns: the reconstructed u16 value
+ */
 u16 ReadUnalignedU16(u8 *ptr) {
     return ptr[0] | (ptr[1] << 8);
 }
 
-// Reads a s16 from a potentially unaligned address (byte-by-byte, little-endian)
+/*
+ * Reads a signed 16-bit value from a potentially unaligned address.
+ * Assembles two bytes in little-endian order with sign extension.
+ *   ptr: pointer to the first of two consecutive bytes
+ *   returns: the reconstructed s16 value
+ */
 s16 ReadUnalignedS16(u8 *ptr) {
     return (s16)(ptr[0] + (ptr[1] << 8));
 }
