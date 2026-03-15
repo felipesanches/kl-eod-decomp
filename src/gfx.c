@@ -75,7 +75,20 @@ INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c6a8);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c6e0);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c798);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c7fc);
-INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c844);
+/*
+ * Reads a palette color entry from a data stream and writes it to BG palette RAM.
+ * The stream at *0x03004D84 is a packed format: byte[2] is the palette index,
+ * bytes[3..4] are a little-endian RGB555 color value. Advances the stream pointer by 5.
+ *   no parameters (reads from global data stream pointer at 0x03004D84)
+ *   no return value (writes directly to GBA palette RAM at 0x05000000)
+ */
+void WritePaletteColor(void) {
+    u8 **gp = (u8 **)0x03004D84;
+    u16 color = ReadUnalignedU16(*gp + 3);
+    u8 *ptr = *gp;
+    *(u16 *)(0x05000000 + ptr[2] * 2) = color;
+    *gp = ptr + 5;
+}
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c86c);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c898);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c8f4);

@@ -53,3 +53,4 @@ start = 0x08051868
 [renames]
 FUN_0804b254 = "ReadUnalignedU16"
 FUN_0804b260 = "ReadUnalignedS16"
+FUN_0804c844 = "WritePaletteColor"
