@@ -433,6 +433,17 @@
                 <tr><td class="mono">0x0804BB3C</td><td>AllocAndClearGfxBuffer</td><td>gfx</td><td>Allocates and zero-fills the 32-byte GFX state buffer</td></tr>
                 <tr><td class="mono">0x0804BB74</td><td>FreeGfxBuffer</td><td>gfx</td><td>Frees the GFX state buffer</td></tr>
                 <tr><td class="mono">0x0804BB88</td><td>AllocAndClearBuffer_52A4</td><td>gfx</td><td>Allocates and zero-fills the 0x480-byte scratch buffer</td></tr>
+                <tr><td class="mono">0x0804BF7C</td><td>ShutdownGfxSubsystem</td><td>gfx</td><td>Tears down all graphics on scene exit (free chain + stop music)</td></tr>
+                <tr><td class="mono">0x0804BFD0</td><td>InitGfxStreamState</td><td>gfx</td><td>Allocates stream buffer, clears OAM, resets VRAM cursors</td></tr>
+                <tr><td class="mono">0x0804C050</td><td>ResetGfxStreamEntries</td><td>gfx</td><td>Frees all active stream entries, resets video state</td></tr>
+                <tr><td class="mono">0x0804C0EC</td><td>LoadGfxStreamEntry</td><td>gfx</td><td>Loads/decompresses a stream entry from ROM table</td></tr>
+                <tr><td class="mono">0x0804C1C0</td><td>DmaSpriteToObjVram</td><td>gfx</td><td>DMAs sprite tile data from stream buffer to OBJ VRAM</td></tr>
+                <tr><td class="mono">0x0804C218</td><td>SetSpriteTableFromIndex</td><td>gfx</td><td>Sets sprite table pointer from ROM lookup at 0x08189E84</td></tr>
+                <tr><td class="mono">0x0804E42A</td><td>StreamCmd_ClearRenderMode</td><td>gfx</td><td>Clears render mode bits in level state</td></tr>
+                <tr><td class="mono">0x0804E814</td><td>StreamCmd_DisableVBlank</td><td>gfx</td><td>Disables VBlank IRQ + interrupt handlers</td></tr>
+                <tr><td class="mono">0x0804E8FE</td><td>StreamCmd_DisableVBlankAndStopMusic</td><td>gfx</td><td>Disables VBlank + stops all music</td></tr>
+                <tr><td class="mono">0x08050134</td><td>StopSoundEffects</td><td>m4a</td><td>Stops sound effect playback channels</td></tr>
+                <tr><td class="mono">0x080500FC</td><td>StopAllMusicPlayers</td><td>m4a</td><td>Iterates ROM_MUSIC_TABLE to halt all 4 music players</td></tr>
             </tbody>
         </table>
 
@@ -506,6 +517,7 @@
                 <tr><td class="mono">StreamCmd_EnableMosaic</td><td>Matched</td><td>Stream command: enable BG2/BG3 mosaic</td></tr>
                 <tr><td class="mono">StreamCmd_StopMusic</td><td>Matched</td><td>Stream command: halt all music</td></tr>
                 <tr><td class="mono">StreamCmd_StopMusicAndDisableIRQ</td><td>Matched</td><td>Stream command: stop music + disable IRQ</td></tr>
+                <tr><td class="mono">StreamCmd_DisableVBlank</td><td>Matched</td><td>Stream command: disable VBlank interrupt</td></tr>
             </tbody>
         </table>
 
@@ -524,6 +536,15 @@
                 <tr><td class="mono">AllocAndClearGfxBuffer</td><td>DMA3 with stack-allocated source: register allocation around <code>sp</code></td></tr>
                 <tr><td class="mono">AllocAndClearBuffer_52A4</td><td>Same DMA3 stack-source pattern</td></tr>
                 <tr><td class="mono">ClearScreenBufferB</td><td>Non-word-aligned + <code>bx lr</code> leaf</td></tr>
+                <tr><td class="mono">StreamCmd_SetBGScroll</td><td>Register allocation mismatch across <code>ReadUnalignedU16</code> calls</td></tr>
+                <tr><td class="mono">StopAllMusicPlayers</td><td>Unusual <code>u16</code> widening pattern in loop init</td></tr>
+                <tr><td class="mono">StreamCmd_StopSound</td><td>Non-word-aligned function start</td></tr>
+                <tr><td class="mono">StreamCmd_ClearRenderMode</td><td>Non-word-aligned <code>bx lr</code> leaf</td></tr>
+                <tr><td class="mono">StreamCmd_SetRenderMode</td><td>Non-word-aligned <code>bx lr</code> leaf</td></tr>
+                <tr><td class="mono">StreamCmd_Nop3</td><td>Non-word-aligned <code>bx lr</code> leaf</td></tr>
+                <tr><td class="mono">StreamCmd_DisableVBlankAndStopMusic</td><td>Non-word-aligned function start</td></tr>
+                <tr><td class="mono">InitGfxStreamState</td><td>DMA3 with stack-allocated source</td></tr>
+                <tr><td class="mono">ResetGfxStreamEntries</td><td>Loop structure / pointer arithmetic mismatch</td></tr>
             </tbody>
         </table>
 
