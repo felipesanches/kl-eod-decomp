@@ -71,6 +71,10 @@ MODULES, RENAMES = _load_config()
 # Return / tail-call instructions
 _TERMINATING_RE = re.compile(r"^(bx\s|pop\s+\{[^}]*pc[^}]*\}|b\s)")
 
+# Hard returns only (bx / pop {pc}) — excludes `b label` which may be
+# an intra-function branch.  Used for leaf function detection.
+_HARD_RETURN_RE = re.compile(r"^(bx\s|pop\s+\{[^}]*pc[^}]*\})")
+
 # Function prologue
 _PUSH_LR_RE = re.compile(r"^push\s+\{.*lr.*\}", re.IGNORECASE)
 
@@ -262,34 +266,99 @@ def _parse_luvdis(path):
 # ---------------------------------------------------------------------------
 
 
+def _is_label_line(s: str) -> bool:
+    """True if *s* is a label definition (``NAME:`` or ``NAME: @ comment``)."""
+    colon = s.find(":")
+    return colon > 0 and s[:colon].replace("_", "").isalnum()
+
+
+def _find_leaf_end(lines: list[str], start: int, max_instrs: int = 20) -> int:
+    """If lines[start:] begins a leaf function, return the line index of
+    its ``bx lr``.  Otherwise return -1.
+
+    A leaf function is a short code sequence (≤ *max_instrs* instructions)
+    ending with ``bx lr`` that contains no ``.4byte`` data and no
+    ``push {lr}`` (which would indicate a non-leaf function instead).
+
+    ``.2byte`` directives are allowed — they are raw branch encodings
+    that Luvdis emits for certain conditional branches.
+    """
+    instr_count = 0
+    for j in range(start, min(start + max_instrs * 3, len(lines))):
+        s = lines[j].strip()
+        if not s or s.startswith("@"):
+            continue
+        if _is_label_line(s):
+            continue
+        # .4byte = literal pool data → not a leaf function
+        if re.search(r"\.(?:4byte|byte)\b", s):
+            return -1
+        # .2byte = raw instruction encoding (e.g. conditional branches) → OK
+        if s.startswith("."):
+            continue
+        if _PUSH_LR_RE.match(s):
+            return -1  # hit another function prologue
+        instr_count += 1
+        if s == "bx lr":
+            return j if instr_count >= 2 else -1
+        if instr_count > max_instrs:
+            return -1
+    return -1
+
+
 def _detect_sub_functions(lines: list[str], start_addr: int):
     """Find sub-function starts within a Luvdis function body.
 
-    Pattern: terminating instruction → optional padding/data → push {… lr}.
-    Skips splits that would break literal pool references.
+    Detects two patterns:
+      1. **Non-leaf**: terminating instr → padding/data → ``push {… lr}``
+      2. **Leaf**: ``bx``/``pop {pc}`` → padding/data → short code → ``bx lr``
 
+    Pattern 1 triggers on any terminator (including ``b label``).
+    Pattern 2 only triggers on hard returns (``bx``/``pop {pc}``) to avoid
+    false positives from intra-function unconditional branches.
+
+    Skips splits that would break literal pool references.
     Returns list of (line_idx, rom_addr).
     """
     addresses = _compute_addresses(lines, start_addr)
-    seen_return = False
+    seen_any_return = False
+    seen_hard_return = False
     candidates = []
 
     for i, line in enumerate(lines):
         s = line.strip()
         if not s or s.startswith("@"):
             continue
+
         if _is_terminating(s):
-            seen_return = True
+            seen_any_return = True
+            if _HARD_RETURN_RE.match(s):
+                seen_hard_return = True
             continue
-        if seen_return:
-            # Skip labels, directives, NOP padding, and data-as-code
-            if s.endswith(":") or s.startswith(".") or s == _NOP:
-                continue
-            if _PUSH_LR_RE.match(s):
-                candidates.append((i, addresses[i]))
-                seen_return = False
-            else:
-                continue  # data decoded as instructions — keep scanning
+
+        if not seen_any_return and not seen_hard_return:
+            continue
+
+        # Skip labels, directives, NOP padding, data
+        if _is_label_line(s) or s.startswith(".") or s == _NOP:
+            continue
+        if re.search(r"\.(?:4byte|2byte|byte)\b", s):
+            continue
+
+        # Pattern 1: push {lr} after any terminator
+        if seen_any_return and _PUSH_LR_RE.match(s):
+            candidates.append((i, addresses[i]))
+            seen_any_return = seen_hard_return = False
+            continue
+
+        # Pattern 2: leaf function after a hard return (bx / pop {pc})
+        if seen_hard_return and _find_leaf_end(lines, i) >= 0:
+            candidates.append((i, addresses[i]))
+            seen_any_return = seen_hard_return = False
+            continue
+
+        # Data decoded as instructions — keep scanning
+        continue
 
     # Validate back-to-front: reject splits that break pool references
     valid = []
@@ -648,6 +717,67 @@ def _find_next_include_addr(lines, current_sym, name_to_addr):
 # ---------------------------------------------------------------------------
 
 
+def _manual_split_leaf(nm_root, module, parent_fname, trigger_instr,
+                       new_addr, new_name):
+    """Split a leaf function out of a merged .s file at a specific instruction.
+
+    Finds the first occurrence of *trigger_instr* after the last ``bx``
+    return in *parent_fname* and splits everything from that line onward
+    into a new file *new_name*.s.  Also adds INCLUDE_ASM to the C source.
+    """
+    parent_path = os.path.join(nm_root, module, parent_fname)
+    if not os.path.exists(parent_path):
+        return
+    with open(parent_path) as f:
+        lines = f.readlines()
+
+    # Find the split point: trigger_instr after a bx return
+    split_at = None
+    seen_bx = False
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if s.startswith("bx ") or (s.startswith("pop") and "pc" in s):
+            seen_bx = True
+        if seen_bx and s == trigger_instr:
+            split_at = i
+            break
+
+    if split_at is None:
+        return
+
+    # Write the two files
+    parent_lines = lines[:split_at]
+    new_lines = [
+        f"\tnon_word_aligned_thumb_func_start {new_name}\n",
+        f"{new_name}: @ {new_addr:08X}\n",
+    ] + lines[split_at:]
+
+    with open(parent_path, "w") as f:
+        f.writelines(parent_lines)
+    new_path = os.path.join(nm_root, module, f"{new_name}.s")
+    with open(new_path, "w") as f:
+        f.writelines(new_lines)
+
+    # Add INCLUDE_ASM to the C source, right after the parent's INCLUDE_ASM
+    parent_name = parent_fname[:-2]  # strip .s
+    src_dir = os.path.join(ROOT, "src")
+    include_line = f'INCLUDE_ASM("asm/nonmatchings/{module}", {new_name});\n'
+    for cfname in os.listdir(src_dir):
+        if not cfname.endswith(".c"):
+            continue
+        cpath = os.path.join(src_dir, cfname)
+        with open(cpath) as f:
+            clines = f.readlines()
+        for ci, cl in enumerate(clines):
+            if parent_name in cl and "INCLUDE_ASM" in cl:
+                clines.insert(ci + 1, include_line)
+                with open(cpath, "w") as f:
+                    f.writelines(clines)
+                break
+
+    print(f"  Manual split: {parent_fname} -> {new_name}")
+
+
 def _apply_fixups():
     """Apply known assembly fixups for matching."""
     nm_root = os.path.join(ROOT, "asm", "nonmatchings")
@@ -674,6 +804,12 @@ def _apply_fixups():
         break
     else:
         print("  WARNING: Could not find bx r0 SBZ fixup target")
+
+    # Split leaf function at 0x0804FE10 out of FUN_0804fc10.
+    # This function uses push {r4, r5} (no lr) which the automatic
+    # prologue detection doesn't handle.  It ends with pop {r4, r5}; bx lr.
+    _manual_split_leaf(nm_root, "m4a", "FUN_0804fc10.s",
+                       "push {r4, r5}", 0x0804FE10, "FUN_0804fe10")
 
     # Add .global for labels referenced across compilation units
     for label in ("_080482B4", "_0804831C"):

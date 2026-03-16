@@ -8,9 +8,12 @@ INCLUDE_ASM("asm/nonmatchings/engine", FUN_08000dc2);
 INCLUDE_ASM("asm/nonmatchings/engine", FUN_08000e16);
 INCLUDE_ASM("asm/nonmatchings/engine", FUN_08000e6a);
 INCLUDE_ASM("asm/nonmatchings/engine", FUN_08000f70);
+INCLUDE_ASM("asm/nonmatchings/engine", FUN_08000fa2);
 INCLUDE_ASM("asm/nonmatchings/engine", FUN_08000fce);
 INCLUDE_ASM("asm/nonmatchings/engine", FUN_08001028);
 INCLUDE_ASM("asm/nonmatchings/engine", FUN_0800107c);
+INCLUDE_ASM("asm/nonmatchings/engine", FUN_0800111e);
+INCLUDE_ASM("asm/nonmatchings/engine", FUN_0800113e);
 INCLUDE_ASM("asm/nonmatchings/engine", FUN_08001158); /* InitGraphicsSystem — full GFX init: decompress assets, configure BG/VRAM */
 INCLUDE_ASM("asm/nonmatchings/engine", FUN_08001cd0);
 INCLUDE_ASM("asm/nonmatchings/engine", FUN_08001f58);

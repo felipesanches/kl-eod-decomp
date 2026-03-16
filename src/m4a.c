@@ -62,6 +62,8 @@ INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804ee60);
  *   refs: gSoundInfo (0x0300081C), gStreamPtr (0x03004D84)
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804ef50);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804efa2);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804efbe);
 
 /* ── Sound Data & Buffer Management ── */
 
@@ -79,12 +81,17 @@ INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804efde);
  *   refs: gSoundInfo, gStreamPtr, gControlBlock (0x03004C20)
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f004);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f036);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f04a);
 /*
  * SoundChannelTableInit: initialize sound channel table entries.
  * Sets up the per-channel state for all active sound channels.
  *   86 lines, calls FUN_08051868
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f0d0);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f116);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f136);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f15a);
 
 /* ── MIDI / Music Sequence Processing ── */
 
@@ -94,6 +101,7 @@ INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f0d0);
  *   32 lines, calls ReadUnalignedU16
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f180);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f1b6);
 /*
  * MidiProcessEvent: dispatch a MIDI note or control event.
  * Processes a single event from the track bytecode stream,
@@ -110,6 +118,8 @@ INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f1c4);
  *   calls: MidiProcessEvent, FUN_0804f6b6
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f248);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f25e);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f6ba);
 
 /* ── Voice / Instrument Utilities ── */
 
@@ -153,6 +163,7 @@ INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f758);
  *   42 lines, calls InstrumentGetEntry (FUN_0804f73c)
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f766);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f786);
 /*
  * MidiCommandHandler: MIDI command dispatch table handler.
  * Processes track bytecode commands (0xB1-0xCF): tempo, voice select,
@@ -161,6 +172,7 @@ INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f766);
  *   192 lines, writes to REG_SOUND1CNT_L (0x04000060), REG_DMA1SAD (0x040000BC)
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f7b4);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804f936);
 
 /* ── Music Playback Engine ── */
 
@@ -192,6 +204,7 @@ INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804fbe0);
  *   calls: PlaySoundWithContext_D8 (FUN_0805031c)
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804fc10);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0804fe10);
 
 /* ── Sound Effect Processing ── */
 
@@ -311,6 +324,8 @@ INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050134);
  *   45 lines, leaf function
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050162);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050172);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0805018a);
 /*
  * SoundEffectTrigger: trigger a sound effect through the SE player.
  * Uses gMPlayInfo_SE as the MusicPlayer context for SFX playback.
@@ -332,6 +347,7 @@ INCLUDE_ASM("asm/nonmatchings/m4a", FUN_080501ba);
  *       0x040000C6, 0x040000D0
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050200);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0805031a);
 /*
  * Plays a sound effect using the BGM MusicPlayer context (gMPlayInfo_BGM).
  * Used for music-priority sounds that share the BGM mixer.
@@ -562,3 +578,12 @@ void SoundCommand_6450(u32 r0, u32 r1) {
  *   118 lines, leaf function
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08051348);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08051392);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_080513a6);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_080513ba);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_080513ce);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_080513e2);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_080513f6);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08051402);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_0805140e);
+INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08051422);

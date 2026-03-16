@@ -38,6 +38,7 @@ s16 ReadUnalignedS16(u8 *ptr) {
 }
 
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804b270);
+INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804b28a);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804b2a0);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804b2ec);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804b424);
@@ -47,6 +48,7 @@ INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804b920);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bab4);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bad4);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bafc);
+INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bb12);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bb3c);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bb74);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bb86);
@@ -61,6 +63,7 @@ void FreeBuffer_52A4(void) {
 }
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bbd4);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bd10);
+INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bd8a);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bdb4);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804be08);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804be58);
@@ -114,6 +117,7 @@ INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c598);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c60c);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c6a8);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c6e0);
+INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c776);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c798);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804c7fc);
 /*
@@ -175,12 +179,16 @@ INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804debc);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804df80);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e008);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e0e8);
+INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e3d6);
+INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e42a);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e448);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e568);
+INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e5c6);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e5f0);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e634);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e6b6);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e708);
+INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e73a);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e76e);
 /*
  * Reads a command byte from the data stream and processes it via FUN_08050094.
@@ -211,6 +219,7 @@ void DispatchMusicStreamCommand(void) {
     *(u8 **)0x03004D84 += 3;
 }
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e7d2);
+INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e7e6);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e7fa);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e814);
 /*

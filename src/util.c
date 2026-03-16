@@ -2,6 +2,7 @@
 #include "include_asm.h"
 
 INCLUDE_ASM("asm/nonmatchings/util", FUN_08051450);
+INCLUDE_ASM("asm/nonmatchings/util", FUN_080514b2);
 INCLUDE_ASM("asm/nonmatchings/util", FUN_0805150c);
 INCLUDE_ASM("asm/nonmatchings/util", FUN_08051570);
 INCLUDE_ASM("asm/nonmatchings/util", FUN_080515b4);
