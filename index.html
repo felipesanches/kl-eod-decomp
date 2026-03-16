@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klonoa: Empire of Dreams — Decompilation Research</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <a href="index.html" class="site-title">Klonoa: EoD Decomp</a>
+        <ul class="nav-links">
+            <li><a href="index.html" class="active">Overview</a></li>
+            <li><a href="sound.html">Sound Engine</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>Klonoa: Empire of Dreams</h1>
+        <p class="subtitle">Decompilation Research &amp; Documentation</p>
+
+        <p>
+            This site documents ongoing research into the decompilation of
+            <strong>Klonoa: Empire of Dreams</strong> (GBA, 2001, Namco).
+            The goal is to produce a fully matching C decompilation of the original ROM,
+            enabling analysis, modding, and preservation of this classic platformer.
+        </p>
+
+        <h2>Current Progress</h2>
+
+        <div class="progress-container">
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: 6.05%;">6.0%</div>
+            </div>
+            <p class="progress-label">28 of 463 functions matched</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">463</div>
+                <div class="stat-label">Total Functions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">28</div>
+                <div class="stat-label">Matched</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">435</div>
+                <div class="stat-label">Remaining</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">6.0%</div>
+                <div class="stat-label">Completion</div>
+            </div>
+        </div>
+
+        <h2>Documentation</h2>
+
+        <div class="card-grid">
+            <a href="sound.html" class="card" style="text-decoration: none;">
+                <h3>Sound Engine</h3>
+                <p>
+                    Comprehensive documentation of the Nintendo MusicPlayer2000 ("Sappy" / "m4a")
+                    sound engine used by the game. Includes ROM layout, song table, bytecode reference,
+                    voice/instrument definitions, and tool compatibility.
+                </p>
+            </a>
+
+            <div class="card">
+                <h3>More Coming Soon</h3>
+                <p>
+                    Additional documentation on game engine systems, graphics, level formats,
+                    and entity/object structures will be added as decompilation progresses.
+                </p>
+            </div>
+        </div>
+
+        <h2>Project Links</h2>
+        <ul>
+            <li><a href="https://github.com/felipesanches/kl-eod-decomp">GitHub Repository (fork)</a></li>
+            <li><a href="https://github.com/macabeus/kl-eod-decomp">Upstream Repository</a></li>
+        </ul>
+
+        <h2>Toolchain</h2>
+        <p>
+            The project uses <strong>agbcc</strong> (the original GCC-based ARM compiler used for GBA development)
+            to produce byte-identical output matching the original ROM. Disassembly is assisted by
+            <strong>luvdis</strong>, and the build system is a standard Makefile-based setup typical of GBA
+            decomp projects.
+        </p>
+    </div>
+
+    <footer>
+        Klonoa: Empire of Dreams Decompilation Research Project
+    </footer>
+</body>
+</html>

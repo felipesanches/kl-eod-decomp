@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Engine — Klonoa: EoD Decomp</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <a href="index.html" class="site-title">Klonoa: EoD Decomp</a>
+        <ul class="nav-links">
+            <li><a href="index.html">Overview</a></li>
+            <li><a href="sound.html" class="active">Sound Engine</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>Sound Engine Documentation</h1>
+        <p class="subtitle">Nintendo MusicPlayer2000 ("Sappy" / "m4a")</p>
+
+        <p>
+            Klonoa: Empire of Dreams uses the standard GBA sound engine known as
+            <strong>Nintendo MusicPlayer2000</strong>, commonly referred to as <strong>"Sappy"</strong>
+            or <strong>"m4a"</strong> in the decomp community. This is the same engine found in
+            Pokemon, Kirby, Fire Emblem, and most first-party and many third-party GBA titles.
+        </p>
+
+        <!-- ===== ROM Layout ===== -->
+        <h2>ROM Layout</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Region</th>
+                    <th>Address Range</th>
+                    <th>Size</th>
+                    <th>Content</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Sound tables</td>
+                    <td class="mono">0x08117xxx</td>
+                    <td>~3 KB</td>
+                    <td>Pitch, frequency, command dispatch LUTs</td>
+                </tr>
+                <tr>
+                    <td>Voice tables</td>
+                    <td class="mono">0x08117CBC &ndash; 0x081189xx</td>
+                    <td>~3 KB</td>
+                    <td>3 instrument/voice group tables</td>
+                </tr>
+                <tr>
+                    <td>PCM samples</td>
+                    <td class="mono">0x0811BB00 &ndash; 0x08163044</td>
+                    <td>~300 KB</td>
+                    <td>Signed 8-bit PCM waveform data</td>
+                </tr>
+                <tr>
+                    <td>Song/track data</td>
+                    <td class="mono">0x0816CB04 &ndash; 0x08184604</td>
+                    <td>~100 KB</td>
+                    <td>Song headers + bytecode track data</td>
+                </tr>
+                <tr>
+                    <td>Song pointer table</td>
+                    <td class="mono">0x08118AE4</td>
+                    <td>~1.3 KB</td>
+                    <td>165 entries (39 songs + 126 SFX)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ===== Structure ===== -->
+        <h2>Structure</h2>
+
+        <h3>Song Table</h3>
+        <p>
+            Located at <code>ROM_MUSIC_META_TABLE</code> = <code>0x08118AE4</code>.
+            Contains 165 entries of the form:
+        </p>
+        <pre><code><span class="kw">struct</span> <span class="ty">SongTableEntry</span> {
+    <span class="ty">u32</span> songHeaderPtr;
+    <span class="ty">u32</span> flags;  <span class="cm">// songs: 0, SFX: encodes priority</span>
+};</code></pre>
+
+        <h3>Song Header</h3>
+        <pre><code><span class="kw">struct</span> <span class="ty">SongHeader</span> {
+    <span class="ty">u8</span>  numTracks;
+    <span class="ty">u8</span>  blockCount;
+    <span class="ty">u16</span> priority;
+    <span class="ty">u32</span> voiceGroupPtr;
+    <span class="ty">u32</span> trackPtrs[numTracks];
+};</code></pre>
+
+        <h3>Track Data</h3>
+        <p>
+            Proprietary MIDI-like bytecode. Encodes notes (<code>0x81</code>&ndash;<code>0xB0</code>),
+            waits (<code>0x00</code>&ndash;<code>0x7F</code>), and control commands (tempo, instrument
+            select, volume, pan, pitch bend, loops, subroutines).
+        </p>
+
+        <h3>Voice / Instrument Entry (12 bytes)</h3>
+        <pre><code><span class="kw">struct</span> <span class="ty">VoiceEntry</span> {
+    <span class="ty">u8</span>  type;       <span class="cm">// see Voice/Instrument Types table</span>
+    <span class="ty">u8</span>  baseKey;
+    <span class="ty">u16</span> flags;
+    <span class="ty">u32</span> samplePtr;
+    <span class="ty">u32</span> adsr;
+};</code></pre>
+
+        <h3>PCM Sample Header (16 bytes)</h3>
+        <pre><code><span class="kw">struct</span> <span class="ty">SampleHeader</span> {
+    <span class="ty">u32</span> flags;
+    <span class="ty">u32</span> pitch;
+    <span class="ty">u32</span> loopOffset;
+    <span class="ty">u32</span> length;
+    <span class="cm">// followed by signed 8-bit PCM data</span>
+};</code></pre>
+
+        <!-- ===== Content ===== -->
+        <h2>Content: 39 Songs, 126 Sound Effects</h2>
+        <p>
+            Songs range from 3&ndash;8 tracks. Most use the main voice table at
+            <code>0x08117FD4</code>.
+        </p>
+
+        <!-- ===== Song Table ===== -->
+        <h3>Song Table (39 songs)</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ROM Addr</th>
+                    <th>Tracks</th>
+                    <th>Priority</th>
+                    <th>Voice Table</th>
+                    <th>Est. Size</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>0</td><td class="mono">0x0816CB04</td><td>7</td><td class="mono">0x9E</td><td class="mono">0x08117FD4</td><td>200</td></tr>
+                <tr><td>1</td><td class="mono">0x0816CBCC</td><td>4</td><td class="mono">0xA8</td><td class="mono">0x08117FD4</td><td>588</td></tr>
+                <tr><td>2</td><td class="mono">0x0816CE18</td><td>3</td><td class="mono">0x94</td><td class="mono">0x081185C8</td><td>572</td></tr>
+                <tr><td>3</td><td class="mono">0x0816D054</td><td>4</td><td class="mono">0x9E</td><td class="mono">0x08117FD4</td><td>2440</td></tr>
+                <tr><td>4</td><td class="mono">0x0816D9DC</td><td>6</td><td class="mono">0x80</td><td class="mono">0x08117FD4</td><td>1556</td></tr>
+                <tr><td>5</td><td class="mono">0x0816DFF0</td><td>6</td><td class="mono">0x80</td><td class="mono">0x08117FD4</td><td>2116</td></tr>
+                <tr><td>6</td><td class="mono">0x0816E834</td><td>6</td><td class="mono">0x80</td><td class="mono">0x08117FD4</td><td>2004</td></tr>
+                <tr><td>7</td><td class="mono">0x0816F008</td><td>7</td><td class="mono">0x80</td><td class="mono">0x08117FD4</td><td>1904</td></tr>
+                <tr><td>8</td><td class="mono">0x0816F778</td><td>6</td><td class="mono">0x80</td><td class="mono">0x08117FD4</td><td>1624</td></tr>
+                <tr><td>9</td><td class="mono">0x0816FDD0</td><td>7</td><td class="mono">0x80</td><td class="mono">0x08117FD4</td><td>2040</td></tr>
+                <tr><td>10</td><td class="mono">0x081705C8</td><td>6</td><td class="mono">0x80</td><td class="mono">0x08117FD4</td><td>2060</td></tr>
+                <tr><td>11</td><td class="mono">0x08170DD4</td><td>7</td><td class="mono">0x80</td><td class="mono">0x081185C8</td><td>1808</td></tr>
+                <tr><td>12</td><td class="mono">0x081714E4</td><td>7</td><td class="mono">0xA8</td><td class="mono">0x081185C8</td><td>536</td></tr>
+                <tr><td>13</td><td class="mono">0x081716FC</td><td>4</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>756</td></tr>
+                <tr><td>14</td><td class="mono">0x081719F0</td><td>5</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>508</td></tr>
+                <tr><td>15</td><td class="mono">0x08171BEC</td><td>3</td><td class="mono">0xB2</td><td class="mono">0x08117FD4</td><td>1156</td></tr>
+                <tr><td>16</td><td class="mono">0x08172070</td><td>6</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>440</td></tr>
+                <tr><td>17</td><td class="mono">0x08172228</td><td>4</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>660</td></tr>
+                <tr><td>18</td><td class="mono">0x081724BC</td><td>6</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>988</td></tr>
+                <tr><td>19</td><td class="mono">0x08172898</td><td>5</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>1180</td></tr>
+                <tr><td>20</td><td class="mono">0x08172D34</td><td>7</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>1020</td></tr>
+                <tr><td>21</td><td class="mono">0x08173130</td><td>6</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>1176</td></tr>
+                <tr><td>22</td><td class="mono">0x081735C8</td><td>6</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>1756</td></tr>
+                <tr><td>23</td><td class="mono">0x08173CA4</td><td>5</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>1324</td></tr>
+                <tr><td>24</td><td class="mono">0x081741D0</td><td>6</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>488</td></tr>
+                <tr><td>25</td><td class="mono">0x081743B8</td><td>5</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>564</td></tr>
+                <tr><td>26</td><td class="mono">0x081745EC</td><td>6</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>1644</td></tr>
+                <tr><td>27</td><td class="mono">0x08174C58</td><td>6</td><td class="mono">0x99</td><td class="mono">0x08117FD4</td><td>804</td></tr>
+                <tr><td>28</td><td class="mono">0x08174F7C</td><td>6</td><td class="mono">0x94</td><td class="mono">0x08117FD4</td><td>920</td></tr>
+                <tr><td>29</td><td class="mono">0x08175314</td><td>5</td><td class="mono">0x99</td><td class="mono">0x081185C8</td><td>2284</td></tr>
+                <tr><td>30</td><td class="mono">0x08175C00</td><td>6</td><td class="mono">0x80</td><td class="mono">0x08117FD4</td><td>180</td></tr>
+                <tr><td>31</td><td class="mono">0x08175CB4</td><td>3</td><td class="mono">0x80</td><td class="mono">0x081185C8</td><td>712</td></tr>
+                <tr><td>32</td><td class="mono">0x08175F7C</td><td>7</td><td class="mono">0x99</td><td class="mono">0x081185C8</td><td>~57K</td></tr>
+                <tr><td>33</td><td class="mono">0x08183F7C</td><td>3</td><td class="mono">0x9E</td><td class="mono">0x08117CBC</td><td>1672</td></tr>
+                <tr><td>34</td><td class="mono">0x08184604</td><td>8</td><td class="mono">0x9E</td><td class="mono">0x081185C8</td><td>&mdash;</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ===== Bytecode Reference ===== -->
+        <h2>m4a Bytecode Reference</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Byte Range</th>
+                    <th>Meaning</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="mono">0x00 &ndash; 0x7F</td><td>Wait / duration values</td></tr>
+                <tr><td class="mono">0x80</td><td>Rest</td></tr>
+                <tr><td class="mono">0x81 &ndash; 0xB0</td><td>Note on (MIDI note number)</td></tr>
+                <tr><td class="mono">0xB1</td><td>End of track (FINE)</td></tr>
+                <tr><td class="mono">0xB2</td><td>Goto (loop)</td></tr>
+                <tr><td class="mono">0xB3</td><td>Pattern call (subroutine)</td></tr>
+                <tr><td class="mono">0xB4</td><td>Pattern return</td></tr>
+                <tr><td class="mono">0xBB</td><td>Set tempo (BPM)</td></tr>
+                <tr><td class="mono">0xBC</td><td>Set key shift (transpose)</td></tr>
+                <tr><td class="mono">0xBD</td><td>Select voice / instrument</td></tr>
+                <tr><td class="mono">0xBE</td><td>Set volume</td></tr>
+                <tr><td class="mono">0xBF</td><td>Set panning</td></tr>
+                <tr><td class="mono">0xC0</td><td>Pitch bend</td></tr>
+                <tr><td class="mono">0xC1 &ndash; 0xCF</td><td>Various controllers</td></tr>
+                <tr><td class="mono">0xCE</td><td>Extended command</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ===== Voice Types ===== -->
+        <h2>Voice / Instrument Types</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>DirectSound</td><td class="mono">0x00</td><td>PCM sample playback</td></tr>
+                <tr><td>Square1</td><td class="mono">0x01</td><td>CGB Square wave with sweep</td></tr>
+                <tr><td>Square2</td><td class="mono">0x02</td><td>CGB Square wave</td></tr>
+                <tr><td>Wave</td><td class="mono">0x03</td><td>CGB Programmable wave</td></tr>
+                <tr><td>Noise</td><td class="mono">0x04</td><td>CGB Noise</td></tr>
+                <tr><td>KeySplit</td><td class="mono">0x08</td><td>Split by key range</td></tr>
+                <tr><td>Drumset</td><td class="mono">0x40</td><td>Percussion kit</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ===== First 16 Instruments ===== -->
+        <h2>First 16 Instruments (Main Voice Table)</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Idx</th>
+                    <th>Type</th>
+                    <th>Key</th>
+                    <th>Sample Ptr</th>
+                    <th>ADSR</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>0</td><td>DirectSound</td><td>60</td><td class="mono">0x08143F1C</td><td class="mono">0x0000E7FF</td></tr>
+                <tr><td>1</td><td>DirectSound</td><td>60</td><td class="mono">0x081446BC</td><td class="mono">0x6BCBEC80</td></tr>
+                <tr><td>2</td><td>Square2</td><td>60</td><td>&mdash;</td><td>duty=2, len=512</td></tr>
+                <tr><td>3</td><td>DirectSound</td><td>60</td><td class="mono">0x081463A8</td><td class="mono">0x7FE500FF</td></tr>
+                <tr><td>4</td><td>Noise</td><td>60</td><td>&mdash;</td><td>period=15</td></tr>
+                <tr><td>5</td><td>DirectSound</td><td>60</td><td class="mono">0x08130D1C</td><td class="mono">0x9500F9FF</td></tr>
+                <tr><td>6</td><td>DirectSound</td><td>60</td><td class="mono">0x081229B0</td><td class="mono">0xA5E5E340</td></tr>
+                <tr><td>7</td><td>DirectSound</td><td>60</td><td class="mono">0x08128064</td><td class="mono">0x0000EBFF</td></tr>
+                <tr><td>8</td><td>DirectSound</td><td>60</td><td class="mono">0x08148CCC</td><td class="mono">0x3C33FD80</td></tr>
+                <tr><td>9</td><td>Square1</td><td>60</td><td>&mdash;</td><td>sweep=3, duty=5</td></tr>
+                <tr><td>10</td><td>Square2</td><td>60</td><td>&mdash;</td><td>duty=2, len=512</td></tr>
+                <tr><td>11</td><td>Square2</td><td>60</td><td>&mdash;</td><td>duty=3, len=1280</td></tr>
+                <tr><td>12</td><td>Noise</td><td>60</td><td>&mdash;</td><td>duty=2</td></tr>
+                <tr><td>13</td><td>Square1</td><td>60</td><td>&mdash;</td><td>sweep=2, len=0xB02</td></tr>
+                <tr><td>14</td><td>Square2</td><td>60</td><td>&mdash;</td><td>duty=1, len=0xD02</td></tr>
+                <tr><td>15</td><td>Drumset</td><td>0</td><td class="mono">0x081188B0</td><td>(sub-table)</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ===== Tools ===== -->
+        <h2>Tools</h2>
+
+        <p>The m4a format is compatible with standard GBA music tools:</p>
+        <ul>
+            <li><strong>sappy</strong> &mdash; GUI song player/editor</li>
+            <li><strong>mid2agb</strong> &mdash; MIDI to m4a converter (part of the official Nintendo SDK)</li>
+            <li><strong>agb2mid</strong> &mdash; m4a to MIDI converter</li>
+            <li><strong>pokemid</strong> &mdash; MIDI conversion tool for Pokemon games (works with any m4a game)</li>
+        </ul>
+    </div>
+
+    <footer>
+        Klonoa: Empire of Dreams Decompilation Research Project
+    </footer>
+</body>
+</html>
