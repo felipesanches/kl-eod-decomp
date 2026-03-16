@@ -177,13 +177,11 @@
 
                 statusEl.textContent = 'Initializing synthesizer...';
                 synth = new WorkletSynthesizer(ctx);
-                loadBar.style.width = '80%';
+                await synth.isReady;
+                loadBar.style.width = '85%';
 
                 statusEl.textContent = 'Loading soundfont into synth...';
                 await synth.soundBankManager.addSoundBank(soundfontBuffer, "gba");
-                loadBar.style.width = '90%';
-
-                await synth.isReady;
                 loadBar.style.width = '100%';
 
                 initialized = true;
