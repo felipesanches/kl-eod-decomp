@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphics Gallery — Klonoa: Empire of Dreams Decomp</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .gallery-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .gallery-card:hover {
+            border-color: var(--accent);
+        }
+
+        .gallery-card .preview {
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            min-height: 200px;
+            cursor: pointer;
+        }
+
+        .gallery-card .preview img {
+            max-width: 100%;
+            max-height: 300px;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .gallery-card .info {
+            padding: 0.8rem 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .gallery-card .info h3 {
+            font-size: 0.95rem;
+            color: var(--text-heading);
+            margin-bottom: 0.3rem;
+        }
+
+        .gallery-card .info .meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-family: var(--mono);
+        }
+
+        .gallery-card .info .meta span {
+            display: inline-block;
+            margin-right: 1rem;
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .palette-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            padding: 0.8rem;
+        }
+
+        .palette-card img {
+            width: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            border-radius: 4px;
+        }
+
+        .palette-card .info {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-family: var(--mono);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-top: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-header h2 {
+            margin: 0;
+        }
+
+        .section-header .count {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin: 1rem 0 2rem;
+        }
+
+        .stat-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            text-align: center;
+        }
+
+        .stat-box .value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--accent);
+            font-family: var(--mono);
+        }
+
+        .stat-box .label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 95%;
+            max-height: 95%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html" class="site-title">Klonoa: EoD Decomp</a>
+        <ul class="nav-links">
+            <li><a href="index.html">Overview</a></li>
+            <li><a href="sound.html">Sound Engine</a></li>
+            <li><a href="music.html">Music Player</a></li>
+            <li><a href="gallery.html" class="active">Graphics</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>Graphics Gallery</h1>
+        <p class="subtitle">Extracted tile graphics from the ROM data section</p>
+
+        <p>
+            These graphics assets were extracted from the ROM's data section using
+            custom decompression tools that implement the game's Huffman+LZ77 pipeline
+            (matching the GBA BIOS <code>HuffUnComp</code> and <code>LZ77UnCompWram</code>
+            syscalls). Assets are rendered as 4bpp tile sheets in grayscale; actual
+            in-game colors depend on palette selection at runtime.
+        </p>
+
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="value">12</div>
+                <div class="label">Compressed Assets</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">9</div>
+                <div class="label">Palettes</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">148</div>
+                <div class="label">Tileset Entries</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">500</div>
+                <div class="label">Sprite Frames</div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2>Background / Level Graphics</h2>
+            <span class="count">12 compressed assets (Huffman + LZ77)</span>
+        </div>
+        <p>
+            Large tile sheets used for level backgrounds, world maps, and UI screens.
+            Each asset is compressed using a two-stage pipeline: 4-bit Huffman encoding
+            followed by LZ77. Click any image to view at full resolution.
+        </p>
+
+        <div class="gallery-grid">
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_00.png')">
+                    <img src="gallery/backgrounds/gfx_00.png" alt="GFX Asset 0" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>gfx_00 (UI Elements)</h3>
+                    <div class="meta">
+                        <span>0x32DF0C</span>
+                        <span>9,732 B</span>
+                        <span>304 tiles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_01.png')">
+                    <img src="gallery/backgrounds/gfx_01.png" alt="GFX Asset 1" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>gfx_01</h3>
+                    <div class="meta">
+                        <span>0x32ECF0</span>
+                        <span>6,148 B</span>
+                        <span>192 tiles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_02.png')">
+                    <img src="gallery/backgrounds/gfx_02.png" alt="GFX Asset 2" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>gfx_02</h3>
+                    <div class="meta">
+                        <span>0x32F6E8</span>
+                        <span>6,148 B</span>
+                        <span>192 tiles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_03.png')">
+                    <img src="gallery/backgrounds/gfx_03.png" alt="GFX Asset 3" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>gfx_03</h3>
+                    <div class="meta">
+                        <span>0x33018C</span>
+                        <span>10,244 B</span>
+                        <span>320 tiles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_04.png')">
+                    <img src="gallery/backgrounds/gfx_04.png" alt="GFX Asset 4" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>gfx_04</h3>
+                    <div class="meta">
+                        <span>0x330FC4</span>
+                        <span>18,436 B</span>
+                        <span>576 tiles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_06.png')">
+                    <img src="gallery/backgrounds/gfx_06.png" alt="GFX Asset 6" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>gfx_06 (World Tiles)</h3>
+                    <div class="meta">
+                        <span>0x331E48</span>
+                        <span>114,692 B</span>
+                        <span>3,584 tiles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_07.png')">
+                    <img src="gallery/backgrounds/gfx_07.png" alt="GFX Asset 7" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>gfx_07 (World Tiles)</h3>
+                    <div class="meta">
+                        <span>0x33A734</span>
+                        <span>94,212 B</span>
+                        <span>2,944 tiles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_08.png')">
+                    <img src="gallery/backgrounds/gfx_08.png" alt="GFX Asset 8" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>gfx_08</h3>
+                    <div class="meta">
+                        <span>0x341DF8</span>
+                        <span>41,124 B</span>
+                        <span>1,285 tiles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_09.png')">
+                    <img src="gallery/backgrounds/gfx_09.png" alt="GFX Asset 9" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>gfx_09 (World Tiles)</h3>
+                    <div class="meta">
+                        <span>0x3452A4</span>
+                        <span>82,948 B</span>
+                        <span>2,592 tiles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_10.png')">
+                    <img src="gallery/backgrounds/gfx_10.png" alt="GFX Asset 10" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>gfx_10 (World Tiles)</h3>
+                    <div class="meta">
+                        <span>0x34D190</span>
+                        <span>73,732 B</span>
+                        <span>2,304 tiles</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_11.png')">
+                    <img src="gallery/backgrounds/gfx_11.png" alt="GFX Asset 11" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>gfx_11 (World Tiles)</h3>
+                    <div class="meta">
+                        <span>0x354B2C</span>
+                        <span>149,508 B</span>
+                        <span>4,672 tiles</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2>Palettes</h2>
+            <span class="count">9 color palettes (GBA RGB555)</span>
+        </div>
+        <p>
+            Color palettes stored as arrays of 16-bit GBA RGB555 values. The game
+            loads these into PAL_RAM at runtime to colorize the tile graphics above.
+        </p>
+
+        <div class="palette-grid">
+            <div class="palette-card">
+                <img src="gallery/palettes/palette_12.png" alt="Palette 12">
+                <div class="info">palette_12 (16 colors) @ 0x0789E8</div>
+            </div>
+            <div class="palette-card">
+                <img src="gallery/palettes/palette_13.png" alt="Palette 13">
+                <div class="info">palette_13 (16 colors) @ 0x078A48</div>
+            </div>
+            <div class="palette-card">
+                <img src="gallery/palettes/palette_14.png" alt="Palette 14">
+                <div class="info">palette_14 (256 colors) @ 0x078A68</div>
+            </div>
+            <div class="palette-card">
+                <img src="gallery/palettes/palette_15.png" alt="Palette 15">
+                <div class="info">palette_15 (256 colors) @ 0x078328</div>
+            </div>
+            <div class="palette-card">
+                <img src="gallery/palettes/palette_16.png" alt="Palette 16">
+                <div class="info">palette_16 (16 colors) @ 0x0D8DB0</div>
+            </div>
+            <div class="palette-card">
+                <img src="gallery/palettes/palette_17.png" alt="Palette 17">
+                <div class="info">palette_17 (16 colors) @ 0x078A08</div>
+            </div>
+            <div class="palette-card">
+                <img src="gallery/palettes/palette_18.png" alt="Palette 18">
+                <div class="info">palette_18 (16 colors) @ 0x0D8DD0</div>
+            </div>
+            <div class="palette-card">
+                <img src="gallery/palettes/palette_19.png" alt="Palette 19">
+                <div class="info">palette_19 (256 colors) @ 0x0D8DF0</div>
+            </div>
+            <div class="palette-card">
+                <img src="gallery/palettes/palette_20.png" alt="Palette 20">
+                <div class="info">palette_20 (16 colors) @ 0x078A28</div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2>Compression Format</h2>
+        </div>
+        <p>
+            The game uses a two-stage compression pipeline implemented in
+            <code>FUN_08043af4</code> (DecompressData):
+        </p>
+        <ul style="margin: 1rem 0 1rem 2rem; line-height: 2;">
+            <li>
+                <strong>Header word</strong> (4 bytes): Bit 31 = Huffman flag,
+                bits 0-30 = decompressed size
+            </li>
+            <li>
+                <strong>If bit 31 set</strong>: 4-bit Huffman
+                (<code>HuffUnComp</code> / SWI 0x13) followed by LZ77
+                (<code>LZ77UnCompWram</code> / SWI 0x11)
+            </li>
+            <li>
+                <strong>If bit 31 clear</strong>: LZ77 only
+            </li>
+        </ul>
+
+        <div class="section-header">
+            <h2>Data Tables</h2>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Table</th>
+                    <th>ROM Address</th>
+                    <th>Entries</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>ROM_GFX_ASSET_TABLE</code></td>
+                    <td><code>0x0818B7AC</code></td>
+                    <td>59</td>
+                    <td>Background/level graphics (12 compressed + 9 palettes + 38 raw tile banks)</td>
+                </tr>
+                <tr>
+                    <td><code>ROM_TILESET_TABLE</code></td>
+                    <td><code>0x0818B8E0</code></td>
+                    <td>148</td>
+                    <td>Tileset data (sub-arrays of animation frame references)</td>
+                </tr>
+                <tr>
+                    <td><code>ROM_SPRITE_FRAME_TABLE</code></td>
+                    <td><code>0x08078FC8</code></td>
+                    <td>500</td>
+                    <td>Sprite animation frames (OAM attribute metadata)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Full size preview">
+    </div>
+
+    <script>
+        function openLightbox(src) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox').classList.add('active');
+        }
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeLightbox();
+        });
+    </script>
+</body>
+</html>
