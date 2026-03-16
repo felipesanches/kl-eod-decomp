@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Engine — Klonoa: EoD Decomp</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <a href="index.html" class="site-title">Klonoa: EoD Decomp</a>
+        <ul class="nav-links">
+            <li><a href="index.html">Overview</a></li>
+            <li><a href="sound.html">Sound Engine</a></li>
+            <li><a href="music.html">Music Player</a></li>
+            <li><a href="gallery.html">Graphics</a></li>
+            <li><a href="graphics-engine.html">Graphics Engine</a></li>
+            <li><a href="game-engine.html" class="active">Game Engine</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>Game Engine Architecture</h1>
+        <p class="subtitle">Entity System, Player Logic, World Map &amp; Save System</p>
+
+        <p>
+            With 100% of functions now named (475 total), the complete architecture
+            of Klonoa: Empire of Dreams is mapped. The game is structured around a
+            callback-based state machine with per-frame entity updates, a scene
+            transition system, and a modular level loading pipeline.
+        </p>
+
+        <!-- ===== Main Loop ===== -->
+        <h2>Main Game Loop</h2>
+
+        <pre><code><span class="fn">AgbMain</span>()                          <span class="cm">@ 0x08000470 — entry point</span>
+  ├─ Clears IWRAM/VRAM/OAM/palette
+  ├─ Initializes sound, input, display
+  └─ Main loop:
+      ├─ <span class="fn">ReadKeyInput</span>()               <span class="cm">@ debounce + reset combo</span>
+      ├─ <span class="fn">GameUpdate</span>()                 <span class="cm">@ if not paused:</span>
+      │   ├─ <span class="fn">UpdateWorldMapNodeState</span>()
+      │   ├─ <span class="fn">UpdatePlayerInput</span>()
+      │   ├─ <span class="fn">InitPlayerCollision</span>()
+      │   └─ <span class="fn">UpdateWorldMapCursor</span>()
+      ├─ <span class="fn">UpdatePaletteAnimations</span>()   <span class="cm">@ 0x2C palette slots</span>
+      └─ VBlank wait + DMA transfers</code></pre>
+
+        <!-- ===== Entity System ===== -->
+        <h2>Entity System</h2>
+
+        <p>
+            The game uses a fixed-size entity array at <code>0x03002920</code>,
+            with each entry being 28 bytes. Entity slot 0 is always the player.
+        </p>
+
+        <h3>Entity Update Pipeline</h3>
+        <pre><code><span class="fn">EntityBehaviorMasterUpdate</span>()       <span class="cm">@ 0x08014760 — 13,237 lines (LARGEST function)</span>
+  └─ For each active entity:
+      └─ <span class="fn">EntityUpdateDispatch</span>()       <span class="cm">@ 0x080101E8 — switch on entity type</span>
+          ├─ <span class="fn">EntityGravityAndFloorCheck</span>()
+          ├─ <span class="fn">EntityScrollBoundsCheck</span>()
+          └─ Type-specific handler...</code></pre>
+
+        <h3>Entity Types</h3>
+        <table>
+            <thead>
+                <tr><th>Function</th><th>Lines</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+                <tr><td class="mono">EntityPlatformRide</td><td>983</td><td>Moving platform — position relative to BG scroll</td></tr>
+                <tr><td class="mono">EntityThrowUpdate</td><td>259</td><td>Thrown entity trajectory with parabolic arc</td></tr>
+                <tr><td class="mono">EntityProjectileUpdate</td><td>315</td><td>Projectile movement + collision + particles</td></tr>
+                <tr><td class="mono">EntitySpringBoard</td><td>213</td><td>Bounce pad — applies upward velocity on contact</td></tr>
+                <tr><td class="mono">EntityFloatPath</td><td>216</td><td>Floating/patrol movement along path</td></tr>
+                <tr><td class="mono">EntityBounceOffWall</td><td>247</td><td>Wall bounce with direction reversal</td></tr>
+                <tr><td class="mono">EntityItemDrop</td><td>190</td><td>Item drop with state machine (fall → land)</td></tr>
+                <tr><td class="mono">EntityPickupCollect</td><td>84</td><td>Collectible pickup + HUD counter update</td></tr>
+                <tr><td class="mono">EntityDeathAnimation</td><td>188</td><td>Death/despawn with debris sprites</td></tr>
+                <tr><td class="mono">EntityCutsceneActor</td><td>360</td><td>Scripted entity for cutscene sequences</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Boss Phases</h3>
+        <table>
+            <thead>
+                <tr><th>Function</th><th>Lines</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+                <tr><td class="mono">EntityBossPhaseA</td><td>1,656</td><td>Multi-state boss AI with sprite DMA + attack patterns</td></tr>
+                <tr><td class="mono">EntityBossPhaseB</td><td>951</td><td>Boss variant with distance-based attacks</td></tr>
+                <tr><td class="mono">EntityBossPhaseC</td><td>1,871</td><td>Largest boss — multi-attack patterns + health thresholds</td></tr>
+                <tr><td class="mono">EntityBossPhaseD</td><td>1,640</td><td>Boss with tile collision + complex movement</td></tr>
+                <tr><td class="mono">EntityMiniBoss</td><td>276</td><td>Simpler boss pattern with sound triggers</td></tr>
+                <tr><td class="mono">EntityMiniBossAlt</td><td>653</td><td>Multi-state mini-boss variant</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ===== Player System ===== -->
+        <h2>Player System</h2>
+
+        <p>
+            The player has multiple update modes depending on the current game state:
+        </p>
+
+        <table>
+            <thead>
+                <tr><th>Function</th><th>Lines</th><th>Context</th></tr>
+            </thead>
+            <tbody>
+                <tr><td class="mono">PlayerMainUpdate</td><td>4,351</td><td>Normal gameplay — movement, collision, animation</td></tr>
+                <tr><td class="mono">PlayerMovementPhysics</td><td>1,421</td><td>Input-driven movement with tile collision</td></tr>
+                <tr><td class="mono">UpdatePlayerNormal</td><td>1,728</td><td>Standard level gameplay (code_3)</td></tr>
+                <tr><td class="mono">UpdatePlayerBoss</td><td>1,706</td><td>Boss fight variant</td></tr>
+                <tr><td class="mono">UpdatePlayerMinigame</td><td>2,181</td><td>Puzzle/minigame levels</td></tr>
+                <tr><td class="mono">UpdatePlayerAlternate</td><td>1,839</td><td>Alternate movement mode</td></tr>
+                <tr><td class="mono">UpdatePlayerSpecial</td><td>1,475</td><td>Special interaction mode</td></tr>
+                <tr><td class="mono">UpdatePlayerFinalBoss</td><td>1,564</td><td>Final boss encounter</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Player Actions</h3>
+        <ul>
+            <li><strong>Grab/Throw</strong>: <code>PlayerGrabInputCheck</code> detects grab input,
+                <code>EntityStateSwitch_Carried</code> handles carried entity states</li>
+            <li><strong>Collision</strong>: <code>CheckTileCollisionVertical</code> and
+                <code>CheckTileCollisionSloped</code> check against the tile collision map</li>
+            <li><strong>Death/Respawn</strong>: <code>PlayerRespawnOrDeath</code> saves facing
+                direction and resets scroll counters</li>
+        </ul>
+
+        <!-- ===== Scene Transitions ===== -->
+        <h2>Scene Transition System</h2>
+
+        <p>
+            The game uses a callback-stack system for scene transitions. Each
+            transition is a function that gets installed into the callback chain
+            and removes itself when complete.
+        </p>
+
+        <table>
+            <thead>
+                <tr><th>Function</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+                <tr><td class="mono">TransitionFadeOutDisableIRQ</td><td>Fade out then disable HBlank/VCount interrupts</td></tr>
+                <tr><td class="mono">TransitionFadeInBldAlpha</td><td>Fade in using BLDCNT alpha blending</td></tr>
+                <tr><td class="mono">TransitionInitLevelMusic</td><td>Select track by world/level, begin playback</td></tr>
+                <tr><td class="mono">TransitionToWorldMap</td><td>Fade to black, set up world map scene</td></tr>
+                <tr><td class="mono">TransitionGameplayInit</td><td>Free buffers, install gameplay callbacks</td></tr>
+                <tr><td class="mono">TransitionFadeOutWithMusic</td><td>Fade screen + music volume simultaneously</td></tr>
+                <tr><td class="mono">TransitionGameOver</td><td>Return to world map or restart level</td></tr>
+                <tr><td class="mono">TransitionToTitleScreen</td><td>Install title screen callbacks</td></tr>
+                <tr><td class="mono">TransitionSoftReset</td><td>Full-black for 16 frames then SWI reset</td></tr>
+                <tr><td class="mono">TransitionToSaveScreen</td><td>Stop music, install save-screen flow</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ===== World Map ===== -->
+        <h2>World Map System</h2>
+
+        <p>
+            The overworld map manages node-based navigation across 9 worlds,
+            each with 6 visions. Key functions:
+        </p>
+
+        <table>
+            <thead>
+                <tr><th>Function</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+                <tr><td class="mono">UpdateWorldMapInput</td><td>D-pad/button input for map navigation</td></tr>
+                <tr><td class="mono">UpdateWorldMapCursor</td><td>Cursor movement + node selection animation</td></tr>
+                <tr><td class="mono">CheckWorldCompletion</td><td>Checks gem/star counts per vision</td></tr>
+                <tr><td class="mono">CountCollectedGems</td><td>Counts collected gems and stars across visions</td></tr>
+                <tr><td class="mono">UpdateWorldMapNodeTile</td><td>Updates node tiles from animation table</td></tr>
+                <tr><td class="mono">FindNextUnlockedVision</td><td>Bitmask lookup for next available vision</td></tr>
+                <tr><td class="mono">UpdateVisionStarIcons</td><td>HUD star/gem icon updates per vision</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ===== Save System ===== -->
+        <h2>Save System (EEPROM)</h2>
+
+        <p>
+            The game uses EEPROM for saving via a 5-function pipeline with retry logic:
+        </p>
+
+        <pre><code><span class="fn">SaveGameToSRAM</span>()                   <span class="cm">@ disable IRQ, stop DMA, write with retry</span>
+  └─ <span class="fn">SaveGameRetryLoop</span>()           <span class="cm">@ up to 10 retries in 64-iteration loop</span>
+      └─ <span class="fn">EepromWriteSector</span>()       <span class="cm">@ build command + 64-bit data, DMA transfer</span>
+          └─ <span class="fn">EepromDmaTransfer</span>()   <span class="cm">@ configure WAITCNT, DMA3 transfer</span>
+
+<span class="fn">SaveGameWithVerify</span>()                <span class="cm">@ write + read-back verification</span>
+  └─ <span class="fn">EepromVerifySector</span>()          <span class="cm">@ read + compare 4 halfwords</span>
+      └─ <span class="fn">EepromReadSector</span>()       <span class="cm">@ build address command, read 64 bits</span>
+
+<span class="fn">LoadGameFromSRAM</span>()                  <span class="cm">@ backup DMA regs, read, restore</span></code></pre>
+
+        <!-- ===== Level Loading ===== -->
+        <h2>Level Loading Pipeline</h2>
+
+        <p>
+            Each of the 9 worlds has 2 vision variants (18 level loaders total)
+            plus a boss arena loader. Each loader DMA-copies ROM tile/map/palette
+            data into VRAM for that specific level.
+        </p>
+
+        <table>
+            <thead>
+                <tr><th>Address Range</th><th>Functions</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+                <tr><td class="mono">0x080301A8&ndash;0x080392A4</td><td>18</td><td>LoadLevel_World1_Vision1 through World9_Vision2</td></tr>
+                <tr><td class="mono">0x08039920</td><td>1</td><td>LoadLevel_BossArena (unique tileset)</td></tr>
+                <tr><td class="mono">0x0802688E&ndash;0x0802FA28</td><td>27</td><td>VBlankDMA_Level1 through Level27 (per-frame VRAM uploads)</td></tr>
+            </tbody>
+        </table>
+
+        <!-- ===== Code Statistics ===== -->
+        <h2>Code Statistics</h2>
+
+        <table>
+            <thead>
+                <tr><th>Module</th><th>Functions</th><th>Largest Function</th><th>Lines</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>code_1</td><td>101</td><td>EntityBehaviorMasterUpdate</td><td>13,237</td></tr>
+                <tr><td>code_3</td><td>86</td><td>UpdatePlayerMinigame</td><td>2,181</td></tr>
+                <tr><td>gfx</td><td>105</td><td>SetupLevelTilemap</td><td>1,836</td></tr>
+                <tr><td>m4a</td><td>93</td><td>MPlayMain</td><td>565</td></tr>
+                <tr><td>code_0</td><td>23</td><td>HandlePauseMenuInput</td><td>512</td></tr>
+                <tr><td>engine</td><td>27</td><td>CameraModeSwitchHandler</td><td>638</td></tr>
+                <tr><td>system</td><td>10</td><td>AgbMain</td><td>258</td></tr>
+                <tr><td>math</td><td>7</td><td>VBlankHandler</td><td>108</td></tr>
+                <tr><td>util</td><td>9</td><td>EepromWriteSector</td><td>114</td></tr>
+                <tr><td>syscalls</td><td>2</td><td>LZ77UnCompWram</td><td>&mdash;</td></tr>
+                <tr><td><strong>Total</strong></td><td><strong>463</strong></td><td></td><td></td></tr>
+            </tbody>
+        </table>
+
+    </div>
+
+    <footer>
+        Klonoa: Empire of Dreams Decompilation Research Project
+    </footer>
+</body>
+</html>
