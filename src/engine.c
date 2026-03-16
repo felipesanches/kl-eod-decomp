@@ -13,8 +13,7 @@ INCLUDE_ASM("asm/nonmatchings/engine", VBlankHandler_WithWindowScroll);
  * Reads REG_VCOUNT and entity brightness value, computes fade level
  * via FUN_08051a0c, then writes to REG_BLDY if within valid range (<=16).
  */
-void UpdateFadeEffect(void)
-{
+void UpdateFadeEffect(void) {
     vu8 *vcount_reg = (vu8 *)0x04000006;
     u8 *entity = (u8 *)0x03002920;
     u8 fade = FUN_08051a0c(*vcount_reg, entity[0x08]);

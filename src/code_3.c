@@ -82,8 +82,7 @@ INCLUDE_ASM("asm/nonmatchings/code_3", UpdatePlayerFinalBoss);
  *   dest: destination buffer (pre-allocated)
  *   src:  ROM pointer to compressed data with sub-header
  */
-void DecompressData(u32 dest, u32 src)
-{
+void DecompressData(u32 dest, u32 src) {
     u32 *srcPtr = (u32 *)src;
 
     if ((s32)srcPtr[0] < 0) {
@@ -108,8 +107,7 @@ void DecompressData(u32 dest, u32 src)
  *   dest: destination address (palette RAM or OBJ VRAM)
  *   size: byte count for DMA transfer
  */
-void DecompressAndCopyToPalette(u32 *src, u32 dest, u16 size)
-{
+void DecompressAndCopyToPalette(u32 *src, u32 dest, u16 size) {
     u32 buf;
     vu32 *dma3;
 
@@ -180,8 +178,7 @@ INCLUDE_ASM("asm/nonmatchings/code_3", SavePlayerProgress);
 /**
  * IsSelectButtonPressed: returns 1 if Select (bit 6) is held, 0 otherwise.
  */
-u32 IsSelectButtonPressed(void)
-{
+u32 IsSelectButtonPressed(void) {
     u32 addr = 0x030051E4;
     u16 *keys;
     asm("" : "=r"(keys) : "0"(addr));

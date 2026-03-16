@@ -60,15 +60,14 @@ INCLUDE_ASM("asm/nonmatchings/gfx", UpdateAffineRegisters);
  *   dest: VRAM destination address
  *   size: byte count for DMA transfer
  */
-void DecompressAndDmaCopy(u32 src, u32 dest, u32 size)
-{
+void DecompressAndDmaCopy(u32 src, u32 dest, u32 size) {
     u32 buf = AllocAndDecompress((u32 *)src);
     DecompressData(buf, src);
 
     {
         vu32 *dma3 = (vu32 *)0x040000D4;
-        dma3[0] = buf + 4;       /* DMA3SAD: skip 4-byte sub-header */
-        dma3[1] = dest;           /* DMA3DAD */
+        dma3[0] = buf + 4; /* DMA3SAD: skip 4-byte sub-header */
+        dma3[1] = dest; /* DMA3DAD */
         dma3[2] = (size >> 1) | 0x80000000; /* DMA3CNT: 16-bit, enable */
         (void)dma3[2];
 
@@ -99,8 +98,7 @@ INCLUDE_ASM("asm/nonmatchings/gfx", SetupLevelLayerConfig);
  *
  *   idx: level palette index (u8, shifted to u32 table offset)
  */
-void FinalizeLevelLayerSetup(u8 idx)
-{
+void FinalizeLevelLayerSetup(u8 idx) {
     u32 *table;
     u32 addr = 0x08189B4C;
     asm("" : "=r"(table) : "0"(addr));
@@ -117,8 +115,7 @@ void FinalizeLevelLayerSetup(u8 idx)
  * LoadAndDecompressStream: decompress a data stream from ROM table entry.
  * Sets gDecompBuffer and gStreamPtr from ROM_STREAM_TABLE[idx].
  */
-void LoadAndDecompressStream(u32 idx)
-{
+void LoadAndDecompressStream(u32 idx) {
     u32 *table;
     u32 addr = 0x08189AFC;
     u32 buf;
@@ -131,8 +128,7 @@ void LoadAndDecompressStream(u32 idx)
 /**
  * FreeDecompStreamBuffer: frees the decompressed stream buffer.
  */
-void FreeDecompStreamBuffer(void)
-{
+void FreeDecompStreamBuffer(void) {
     thunk_FUN_0800020c(gDecompBuffer);
 }
 
@@ -182,13 +178,12 @@ INCLUDE_ASM("asm/nonmatchings/gfx", InitWorldMapGfx);
  * then shuts down the graphics stream, sound, and frees all three
  * dynamically allocated graphics buffers.
  */
-void ShutdownGfxSubsystem(void)
-{
-{
-    vu32 *dest = (vu32 *)0x03000814;
-    u32 *src = (u32 *)0x03004C20;
-    *dest = src[1];
-}
+void ShutdownGfxSubsystem(void) {
+    {
+        vu32 *dest = (vu32 *)0x03000814;
+        u32 *src = (u32 *)0x03004C20;
+        *dest = src[1];
+    }
 
     *(vu16 *)0x04000200 &= 0xFFFD; /* REG_IE &= ~INT_HBLANK */
     *(vu16 *)0x04000004 &= 0xFFEF; /* REG_DISPSTAT &= ~HBLANK_IRQ */
@@ -218,8 +213,7 @@ INCLUDE_ASM("asm/nonmatchings/gfx", ResetGfxStreamEntries);
  * Calls ResetGfxStreamEntries to free all active stream entries,
  * then advances the data stream pointer by 2.
  */
-void StreamCmd_ResetEntries(void)
-{
+void StreamCmd_ResetEntries(void) {
     ResetGfxStreamEntries();
     gStreamPtr += 2;
 }
@@ -278,8 +272,7 @@ INCLUDE_ASM("asm/nonmatchings/gfx", StreamCmd_FillBGTilemap);
  * mosaic value from stream byte[2], stores to global at 0x030007D8.
  * Advances stream pointer by 3.
  */
-void StreamCmd_EnableMosaic(void)
-{
+void StreamCmd_EnableMosaic(void) {
     vu16 *bg2cnt = (vu16 *)0x0400000C;
     *bg2cnt |= 0x40;
     bg2cnt++;
@@ -380,8 +373,7 @@ INCLUDE_ASM("asm/nonmatchings/gfx", StreamCmd_EnableScrollMode);
  * StreamCmd_StopMusic: stream command to halt all music playback.
  * Calls StopAllMusicPlayers, advances stream by 2.
  */
-void StreamCmd_StopMusic(void)
-{
+void StreamCmd_StopMusic(void) {
     StopAllMusicPlayers();
     gStreamPtr += 2;
 }
@@ -424,8 +416,7 @@ INCLUDE_ASM("asm/nonmatchings/gfx", StreamCmd_Nop3);
  * StreamCmd_StopMusicAndDisableIRQ: stops all music and disables interrupts.
  * Calls StopAllMusicPlayers + DisableInterruptsForGfxSetup, advances by 2.
  */
-void StreamCmd_StopMusicAndDisableIRQ(void)
-{
+void StreamCmd_StopMusicAndDisableIRQ(void) {
     StopAllMusicPlayers();
     DisableInterruptsForGfxSetup();
     gStreamPtr += 2;
@@ -434,8 +425,7 @@ void StreamCmd_StopMusicAndDisableIRQ(void)
  * StreamCmd_DisableVBlank: disables VBlank interrupt and calls
  * DisableInterruptsForGfxSetup. Advances stream by 2.
  */
-void StreamCmd_DisableVBlank(void)
-{
+void StreamCmd_DisableVBlank(void) {
     *(vu16 *)0x04000200 &= 0xFFFE; /* REG_IE &= ~INT_VBLANK */
     *(vu16 *)0x04000004 &= 0xFFF7; /* REG_DISPSTAT &= ~VBLANK_IRQ */
     DisableInterruptsForGfxSetup();

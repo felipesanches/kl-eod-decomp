@@ -296,13 +296,13 @@
 /* These compressed tilesets are loaded into VRAM charblocks during scene init
  * (SetupSceneGfx / FUN_0804886c). They provide shared tiles (HUD, items, etc.)
  * that are referenced by per-level BG tilemaps via absolute tile IDs. */
-#define ROM_SCENE_TILESET_A      0x08366214  /* -> charblocks 0-3 via palettePtr */
-#define ROM_SCENE_TILESET_B      0x08367468  /* -> small OBJ tiles */
-#define ROM_SCENE_TILES_CB0      0x082F4D3C  /* -> VRAM 0x06000000 (charblock 0) */
-#define ROM_SCENE_TILES_CB1      0x082F518C  /* -> VRAM 0x06004000 (charblock 1) */
-#define ROM_SCENE_TILES_CB2      0x082F5D0C  /* -> VRAM 0x06008000 (charblock 2) */
-#define ROM_SCENE_TILES_CB3      0x082F7D64  /* -> VRAM 0x0600C000 (charblock 3) */
-#define ROM_SCENE_TILEMAP_DATA   0x082F5920  /* -> IWRAM tilemap buffers */
+#define ROM_SCENE_TILESET_A      0x08366214 /* -> charblocks 0-3 via palettePtr */
+#define ROM_SCENE_TILESET_B      0x08367468 /* -> small OBJ tiles */
+#define ROM_SCENE_TILES_CB0      0x082F4D3C /* -> VRAM 0x06000000 (charblock 0) */
+#define ROM_SCENE_TILES_CB1      0x082F518C /* -> VRAM 0x06004000 (charblock 1) */
+#define ROM_SCENE_TILES_CB2      0x082F5D0C /* -> VRAM 0x06008000 (charblock 2) */
+#define ROM_SCENE_TILES_CB3      0x082F7D64 /* -> VRAM 0x0600C000 (charblock 3) */
+#define ROM_SCENE_TILEMAP_DATA   0x082F5920 /* -> IWRAM tilemap buffers */
 
 /* Scene-specific palette data loaded during SetupSceneGfx. */
 #define ROM_SCENE_PALETTE_A      0x08078F88

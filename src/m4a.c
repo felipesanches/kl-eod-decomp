@@ -448,8 +448,7 @@ INCLUDE_ASM("asm/nonmatchings/m4a", SoundChannelResetAll);
  * sets DMA control to 0x0400 mode, then calls BitUnPack to
  * clear the channel state array.
  */
-void DisableInterruptsForGfxSetup(void)
-{
+void DisableInterruptsForGfxSetup(void) {
     u32 scratch;
     u32 *info = *(u32 **)0x03007FF0;
     u32 magic = info[0];
@@ -516,8 +515,7 @@ INCLUDE_ASM("asm/nonmatchings/m4a", MPlayLoadSongData);
  * Checks Sappy magic, locks engine, sets stop flag, iterates
  * all tracks calling SoundContextRef, then restores magic.
  */
-void MPlayStop(u32 *player)
-{
+void MPlayStop(u32 *player) {
     u32 magic = player[0x34 / 4];
 
     if (magic != 0x68736D53)
