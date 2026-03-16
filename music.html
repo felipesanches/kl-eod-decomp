@@ -5,14 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Music Player — Klonoa: Empire of Dreams</title>
     <link rel="stylesheet" href="style.css">
-    <script type="importmap">
-    {
-        "imports": {
-            "spessasynth_core": "https://cdn.jsdelivr.net/npm/spessasynth_core@4.2.0/dist/index.js",
-            "spessasynth_lib": "https://cdn.jsdelivr.net/npm/spessasynth_lib@4.2.0/dist/index.js"
-        }
-    }
-    </script>
     <style>
         .player-container { max-width: 800px; margin: 2rem auto; }
         .song-list { list-style: none; padding: 0; }
@@ -82,7 +74,11 @@
     </main>
 
     <script type="module">
-        import { WorkletSynthesizer, Sequencer } from 'spessasynth_lib';
+        // Use SpessaSynth v3 which has a simpler API: Synthetizer(destination, sf2buffer)
+        const LIB = 'https://cdn.jsdelivr.net/npm/spessasynth_lib@3.16.2';
+        const { Synthetizer } = await import(`${LIB}/synthetizer/synthetizer.js`);
+        const { Sequencer }   = await import(`${LIB}/sequencer/sequencer.js`);
+        const { MIDI }        = await import(`${LIB}/midi_parser/midi_loader.js`);
 
         const PROCESSOR_URL = './spessasynth_processor.min.js';
 
@@ -155,33 +151,22 @@
             if (initialized) return;
 
             try {
-                // AudioContext must be created from user gesture
                 ctx = new AudioContext();
 
                 statusEl.textContent = 'Downloading soundfont (688KB)...';
                 loadBar.style.width = '10%';
-
                 const sfResponse = await fetch('music/baserom.sf2');
                 soundfontBuffer = await sfResponse.arrayBuffer();
                 loadBar.style.width = '50%';
 
                 statusEl.textContent = 'Loading audio worklet...';
-                try {
-                    await ctx.audioWorklet.addModule(PROCESSOR_URL);
-                } catch (workletErr) {
-                    console.error('addModule failed:', workletErr);
-                    statusEl.textContent = `Worklet error: ${workletErr.message}`;
-                    throw workletErr;
-                }
+                await ctx.audioWorklet.addModule(PROCESSOR_URL);
                 loadBar.style.width = '70%';
 
                 statusEl.textContent = 'Initializing synthesizer...';
-                synth = new WorkletSynthesizer(ctx);
+                // v3 API: Synthetizer(destinationNode, soundFontBuffer)
+                synth = new Synthetizer(ctx.destination, soundfontBuffer);
                 await synth.isReady;
-                loadBar.style.width = '85%';
-
-                statusEl.textContent = 'Loading soundfont into synth...';
-                await synth.soundBankManager.addSoundBank(soundfontBuffer, "gba");
                 loadBar.style.width = '100%';
 
                 initialized = true;
@@ -197,16 +182,20 @@
             try {
                 await initSynth();
 
+                if (seq) {
+                    seq.pause();
+                    seq = null;
+                }
+
                 const filename = `music/song${String(id).padStart(4, '0')}.mid`;
                 statusEl.textContent = `Loading ${filename}...`;
 
                 const midiResponse = await fetch(filename);
                 const midiBuffer = await midiResponse.arrayBuffer();
+                const midi = new MIDI(midiBuffer);
 
-                if (!seq) {
-                    seq = new Sequencer(synth);
-                }
-                seq.loadNewSongList([{ binary: midiBuffer }]);
+                seq = new Sequencer([midi], synth);
+                seq.loop = true;
                 seq.play();
 
                 if (currentSong >= 0) {
@@ -226,7 +215,7 @@
         }
 
         window.stopPlayback = function() {
-            if (seq) { seq.pause(); }
+            if (seq) { seq.pause(); seq = null; }
             if (currentSong >= 0) {
                 document.getElementById(`song-${currentSong}`)?.classList.remove('playing');
             }
