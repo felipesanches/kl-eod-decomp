@@ -44,18 +44,29 @@ function parsePaletteRGBA(data, numColors) {
 }
 
 /**
+ * Decompress a BG asset (returns raw result INCLUDING 4-byte sub-header).
+ */
+function decompressBgAssetRaw(rom, offset) {
+    return decompressAsset(rom, offset).result;
+}
+
+/**
  * Decompress a BG asset and strip the 4-byte sub-header.
- * @param {Uint8Array} rom
- * @param {number} offset  file offset of compressed asset
- * @returns {Uint8Array}
  */
 function decompressBgAsset(rom, offset) {
-    const { result } = decompressAsset(rom, offset);
-    return result.subarray(4);
+    return decompressBgAssetRaw(rom, offset).subarray(4);
 }
 
 // Cache for decompressed BG assets (keyed by offset)
+const _decompCacheRaw = new Map();
 const _decompCache = new Map();
+
+function getCachedDecompRaw(rom, offset) {
+    if (!_decompCacheRaw.has(offset)) {
+        _decompCacheRaw.set(offset, decompressBgAssetRaw(rom, offset));
+    }
+    return _decompCacheRaw.get(offset);
+}
 
 function getCachedDecomp(rom, offset) {
     if (!_decompCache.has(offset)) {
@@ -66,40 +77,56 @@ function getCachedDecomp(rom, offset) {
 
 /** Clear the decompression cache (call when ROM changes). */
 export function clearCache() {
+    _decompCacheRaw.clear();
     _decompCache.clear();
 }
 
 /**
- * Build a combined 1024-tile VRAM buffer from 3 layers' tile data.
- *
- * On GBA hardware, all BG layers share a single charblock (CBB=0).
- * The game loads each layer's tile data into VRAM at specific offsets.
- * We approximate this layout by placing:
- *   - L0 tiles at the start (tile 0)
- *   - L1 tiles right after L0
- *   - L2 tiles right-aligned at the end (tile 1024 - L2_count)
- * This ensures all 10-bit tile IDs (0-1023) used by any layer's tilemap
- * can resolve to valid tile data in the combined buffer.
- *
- * @param {Uint8Array[]} tileDatas  array of 3 tile data buffers
- * @returns {Uint8Array}  combined 1024-tile buffer (32768 bytes)
+ * Build a 1024-tile linear view for a layer based on its CBB.
+ * Tile N in the tilemap maps to VRAM byte (CBB*0x4000 + N*32) mod 0x10000.
+ * We rearrange the 64KB VRAM into a linear 1024-tile array for this CBB.
+ * @param {Uint8Array} vram  64KB VRAM buffer
+ * @param {number} cbb  charblock base (0-3)
+ * @returns {Uint8Array}  1024 tiles * 32 bytes = 32KB
  */
-function buildCombinedTiles(tileDatas) {
-    const nt = tileDatas.map(d => (d.length / 32) | 0);
-    const l2Base = 1024 - nt[2];
-    const l1End = nt[0] + nt[1];
+function buildLayerTileView(vram, cbb) {
+    const view = new Uint8Array(1024 * 32);
+    const base = cbb * 0x4000;
+    for (let t = 0; t < 1024; t++) {
+        const srcAddr = (base + t * 32) & 0xFFFF; // 64KB wrap
+        view.set(vram.subarray(srcAddr, srcAddr + 32), t * 32);
+    }
+    return view;
+}
 
-    // Build 1024-tile VRAM (32KB)
-    const vram = new Uint8Array(1024 * 32);
+/**
+ * Build a 64KB VRAM tile buffer from 3 layers' tile data.
+ *
+ * On GBA hardware, each BG layer has a Character Base Block (CBB) setting
+ * that determines where in VRAM its tile data lives. The CBB is encoded
+ * in byte[1] bits 7-6 of each layer's decompressed tile sub-header.
+ * Each charblock is 16KB (512 tiles). VRAM addresses wrap at 64KB.
+ *
+ * Each layer's tilemap uses tile IDs relative to its own CBB, but high
+ * tile IDs can wrap around to reference tiles from other charblocks.
+ *
+ * @param {Uint8Array[]} tileResults  array of 3 raw decompressed results (WITH 4-byte header)
+ * @returns {{ vram: Uint8Array, cbbs: number[] }}
+ */
+function buildVRAM(tileResults) {
+    const vram = new Uint8Array(0x10000); // 64KB
+    const cbbs = [];
 
-    // L0 at tile 0
-    if (nt[0] > 0) vram.set(tileDatas[0].subarray(0, nt[0] * 32), 0);
-    // L1 right after L0
-    if (nt[1] > 0) vram.set(tileDatas[1].subarray(0, nt[1] * 32), nt[0] * 32);
-    // L2 right-aligned (may overlap L1 if space is tight — L2 wins)
-    if (nt[2] > 0) vram.set(tileDatas[2].subarray(0, nt[2] * 32), l2Base * 32);
+    for (const result of tileResults) {
+        const cbb = (result.length > 1) ? (result[1] >> 6) & 3 : 0;
+        cbbs.push(cbb);
+        const tiles = result.subarray(4);
+        const vramBase = cbb * 0x4000;
+        const copyLen = Math.min(tiles.length, 0x10000 - vramBase);
+        if (copyLen > 0) vram.set(tiles.subarray(0, copyLen), vramBase);
+    }
 
-    return vram;
+    return { vram, cbbs };
 }
 
 /**
@@ -262,8 +289,9 @@ export function renderScene(rom, dv, vision, world) {
     try { palRaw = getCachedDecomp(rom, palOff); }
     catch (e) { return { composite: null, layers: [null, null, null] }; }
 
-    // Decompress all 3 layers' tile and tilemap data
-    const tileDatas = [];
+    // Decompress all 3 layers' tile data (raw, WITH sub-header for CBB extraction)
+    const tileResults = []; // raw decompressed results (with 4-byte header)
+    const tileDatas = [];   // stripped tile data (without 4-byte header)
     const tilemapDatas = [];
     for (let layer = 0; layer < 3; layer++) {
         const bgIdx = (vision - 1) * 27 + world * 3 + layer;
@@ -271,23 +299,27 @@ export function renderScene(rom, dv, vision, world) {
         const tmapOff = romPtr(dv, BG_TILEMAP_TABLE + bgIdx * 4);
 
         if (tileOff === null || tmapOff === null) {
+            tileResults.push(new Uint8Array(4));
             tileDatas.push(new Uint8Array(0));
             tilemapDatas.push(new Uint8Array(0));
             continue;
         }
         try {
-            tileDatas.push(getCachedDecomp(rom, tileOff));
+            const raw = getCachedDecompRaw(rom, tileOff);
+            tileResults.push(raw);
+            tileDatas.push(raw.subarray(4));
             tilemapDatas.push(getCachedDecomp(rom, tmapOff));
         } catch (e) {
+            tileResults.push(new Uint8Array(4));
             tileDatas.push(new Uint8Array(0));
             tilemapDatas.push(new Uint8Array(0));
         }
     }
 
-    // Build combined 1024-tile VRAM buffer
-    const combined = buildCombinedTiles(tileDatas);
+    // Build 64KB VRAM with each layer's tiles at its charblock base
+    const { vram, cbbs } = buildVRAM(tileResults);
 
-    // Render each layer using the combined tile buffer
+    // Render each layer. For tile lookup, use the VRAM with CBB-based addressing.
     const layerCanvases = [];
     for (let layer = 0; layer < 3; layer++) {
         if (tilemapDatas[layer].length < 2) {
@@ -295,7 +327,10 @@ export function renderScene(rom, dv, vision, world) {
             continue;
         }
         const { mapW, mapH } = tilemapDims(tilemapDatas[layer]);
-        layerCanvases.push(composeBg(combined, tilemapDatas[layer], palRaw, mapW, mapH));
+        // Create a tile view for this layer: tile N -> VRAM[(CBB*0x4000 + N*32) % 0x10000]
+        const cbb = cbbs[layer];
+        const layerTiles = buildLayerTileView(vram, cbb);
+        layerCanvases.push(composeBg(layerTiles, tilemapDatas[layer], palRaw, mapW, mapH));
     }
 
     return {
