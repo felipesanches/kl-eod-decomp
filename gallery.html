@@ -139,6 +139,38 @@
             margin-top: 0.2rem;
         }
 
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+            padding: 0.8rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .filter-bar label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: bold;
+        }
+
+        .filter-bar select {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.3rem 0.5rem;
+            font-family: var(--mono);
+            font-size: 0.85rem;
+        }
+
+        .gallery-card.hidden {
+            display: none;
+        }
+
         /* Lightbox */
         .lightbox {
             display: none;
@@ -179,52 +211,2047 @@
 
     <div class="container">
         <h1>Graphics Gallery</h1>
-        <p class="subtitle">Extracted tile graphics from the ROM data section</p>
+        <p class="subtitle">Extracted and composed level backgrounds from the ROM</p>
 
         <p>
-            These graphics assets were extracted from the ROM's data section using
-            custom decompression tools that implement the game's Huffman+LZ77 pipeline
-            (matching the GBA BIOS <code>HuffUnComp</code> and <code>LZ77UnCompWram</code>
-            syscalls). Assets are rendered as 4bpp tile sheets colorized with
-            their closest matching ROM palette. Actual in-game colors may vary
-            as palettes are selected dynamically at runtime.
+            Level backgrounds composed by combining tile charblock data, screenblock
+            tilemaps, and RGB555 palettes from three parallel ROM tables. Each GBA
+            background layer is rendered with correct tile arrangement, palette bank
+            selection, and horizontal/vertical flip flags.
         </p>
 
         <div class="stats-row">
             <div class="stat-box">
-                <div class="value">12</div>
-                <div class="label">Compressed Assets</div>
+                <div class="value">162</div>
+                <div class="label">Composed Backgrounds</div>
             </div>
             <div class="stat-box">
                 <div class="value">9</div>
-                <div class="label">Palettes</div>
+                <div class="label">Worlds</div>
             </div>
             <div class="stat-box">
-                <div class="value">148</div>
-                <div class="label">Tileset Entries</div>
+                <div class="value">6</div>
+                <div class="label">Visions per World</div>
             </div>
             <div class="stat-box">
-                <div class="value">500</div>
-                <div class="label">Sprite Frames</div>
+                <div class="value">3</div>
+                <div class="label">BG Layers</div>
             </div>
         </div>
 
+
         <div class="section-header">
-            <h2>World Map &amp; EX Level Tiles</h2>
-            <span class="count">11 compressed assets (Huffman + LZ77)</span>
+            <h2>Composed Level Backgrounds</h2>
+            <span class="count">162 layers (6 visions &times; 9 worlds &times; 3 BG layers)</span>
         </div>
         <p>
-            Tile sheets used for two contexts: the <strong>World Map</strong> select
-            screens (one per world: Bell Hill, Jugpot, Forlock, Volk, Ishras Viel)
-            and <strong>EX bonus level</strong> backgrounds (6 post-game stages).
-            Main level graphics use separate BG tile/tilemap tables with 162 entries.
-            Click any image to view at full resolution.
+            Level backgrounds composed from three ROM tables: tile charblocks
+            (<code>ROM_BG_TILE_TABLE</code>), tilemaps (<code>ROM_BG_TILEMAP_TABLE</code>),
+            and palettes (<code>ROM_BG_PALETTE_TABLE</code>). Each image shows tiles
+            arranged according to the GBA screenblock tilemap with correct palette
+            bank selection and flip flags applied. Filter by world or vision below.
+        </p>
+
+        <div class="filter-bar">
+            <label>World:</label>
+            <select id="world-filter" onchange="filterBackgrounds()">
+                <option value="all">All Worlds</option>
+
+                <option value="0">World Map</option>
+                <option value="1">Breezegale</option>
+                <option value="2">Jugpot</option>
+                <option value="3">Forlock</option>
+                <option value="4">Volk</option>
+                <option value="5">Ishras Viel</option>
+                <option value="6">Timber Tracks</option>
+                <option value="7">The Dark</option>
+                <option value="8">EX Levels</option>
+
+            </select>
+            <label>Vision:</label>
+            <select id="vision-filter" onchange="filterBackgrounds()">
+                <option value="all">All Visions</option>
+                <option value="1">Vision 1</option>
+                <option value="2">Vision 2</option>
+                <option value="3">Vision 3</option>
+                <option value="4">Vision 4</option>
+                <option value="5">Vision 5</option>
+                <option value="6">Vision 6</option>
+            </select>
+            <label>Layer:</label>
+            <select id="layer-filter" onchange="filterBackgrounds()">
+                <option value="all">All Layers</option>
+                <option value="0">BG0 (far)</option>
+                <option value="1">BG1 (mid)</option>
+                <option value="2">BG2 (near)</option>
+            </select>
+        </div>
+
+        <div class="gallery-grid" id="bg-gallery">
+
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="1" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_world_map_L0.png')">
+                    <img src="gallery/backgrounds/v1_world_map_L0.png" alt="V1 World Map — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 World Map — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="1" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_world_map_L1.png')">
+                    <img src="gallery/backgrounds/v1_world_map_L1.png" alt="V1 World Map — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 World Map — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="1" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_world_map_L2.png')">
+                    <img src="gallery/backgrounds/v1_world_map_L2.png" alt="V1 World Map — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 World Map — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x128</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="2" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_world_map_L0.png')">
+                    <img src="gallery/backgrounds/v2_world_map_L0.png" alt="V2 World Map — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 World Map — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="2" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_world_map_L1.png')">
+                    <img src="gallery/backgrounds/v2_world_map_L1.png" alt="V2 World Map — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 World Map — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="2" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_world_map_L2.png')">
+                    <img src="gallery/backgrounds/v2_world_map_L2.png" alt="V2 World Map — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 World Map — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x128</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="3" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_world_map_L0.png')">
+                    <img src="gallery/backgrounds/v3_world_map_L0.png" alt="V3 World Map — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 World Map — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="3" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_world_map_L1.png')">
+                    <img src="gallery/backgrounds/v3_world_map_L1.png" alt="V3 World Map — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 World Map — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="3" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_world_map_L2.png')">
+                    <img src="gallery/backgrounds/v3_world_map_L2.png" alt="V3 World Map — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 World Map — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x128</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="4" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_world_map_L0.png')">
+                    <img src="gallery/backgrounds/v4_world_map_L0.png" alt="V4 World Map — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 World Map — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="4" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_world_map_L1.png')">
+                    <img src="gallery/backgrounds/v4_world_map_L1.png" alt="V4 World Map — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 World Map — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="4" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_world_map_L2.png')">
+                    <img src="gallery/backgrounds/v4_world_map_L2.png" alt="V4 World Map — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 World Map — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x128</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="5" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_world_map_L0.png')">
+                    <img src="gallery/backgrounds/v5_world_map_L0.png" alt="V5 World Map — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 World Map — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="5" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_world_map_L1.png')">
+                    <img src="gallery/backgrounds/v5_world_map_L1.png" alt="V5 World Map — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 World Map — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="5" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_world_map_L2.png')">
+                    <img src="gallery/backgrounds/v5_world_map_L2.png" alt="V5 World Map — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 World Map — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x128</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="6" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_world_map_L0.png')">
+                    <img src="gallery/backgrounds/v6_world_map_L0.png" alt="V6 World Map — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 World Map — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="6" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_world_map_L1.png')">
+                    <img src="gallery/backgrounds/v6_world_map_L1.png" alt="V6 World Map — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 World Map — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="0" data-vision="6" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_world_map_L2.png')">
+                    <img src="gallery/backgrounds/v6_world_map_L2.png" alt="V6 World Map — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 World Map — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x128</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="1" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_breezegale_L0.png')">
+                    <img src="gallery/backgrounds/v1_breezegale_L0.png" alt="V1 Breezegale — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Breezegale — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="1" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_breezegale_L1.png')">
+                    <img src="gallery/backgrounds/v1_breezegale_L1.png" alt="V1 Breezegale — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Breezegale — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="1" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_breezegale_L2.png')">
+                    <img src="gallery/backgrounds/v1_breezegale_L2.png" alt="V1 Breezegale — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Breezegale — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="2" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_breezegale_L0.png')">
+                    <img src="gallery/backgrounds/v2_breezegale_L0.png" alt="V2 Breezegale — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Breezegale — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="2" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_breezegale_L1.png')">
+                    <img src="gallery/backgrounds/v2_breezegale_L1.png" alt="V2 Breezegale — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Breezegale — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="2" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_breezegale_L2.png')">
+                    <img src="gallery/backgrounds/v2_breezegale_L2.png" alt="V2 Breezegale — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Breezegale — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="3" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_breezegale_L0.png')">
+                    <img src="gallery/backgrounds/v3_breezegale_L0.png" alt="V3 Breezegale — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Breezegale — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="3" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_breezegale_L1.png')">
+                    <img src="gallery/backgrounds/v3_breezegale_L1.png" alt="V3 Breezegale — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Breezegale — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="3" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_breezegale_L2.png')">
+                    <img src="gallery/backgrounds/v3_breezegale_L2.png" alt="V3 Breezegale — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Breezegale — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="4" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_breezegale_L0.png')">
+                    <img src="gallery/backgrounds/v4_breezegale_L0.png" alt="V4 Breezegale — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Breezegale — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="4" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_breezegale_L1.png')">
+                    <img src="gallery/backgrounds/v4_breezegale_L1.png" alt="V4 Breezegale — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Breezegale — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="4" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_breezegale_L2.png')">
+                    <img src="gallery/backgrounds/v4_breezegale_L2.png" alt="V4 Breezegale — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Breezegale — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="5" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_breezegale_L0.png')">
+                    <img src="gallery/backgrounds/v5_breezegale_L0.png" alt="V5 Breezegale — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Breezegale — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="5" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_breezegale_L1.png')">
+                    <img src="gallery/backgrounds/v5_breezegale_L1.png" alt="V5 Breezegale — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Breezegale — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="5" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_breezegale_L2.png')">
+                    <img src="gallery/backgrounds/v5_breezegale_L2.png" alt="V5 Breezegale — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Breezegale — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="6" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_breezegale_L0.png')">
+                    <img src="gallery/backgrounds/v6_breezegale_L0.png" alt="V6 Breezegale — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Breezegale — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="6" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_breezegale_L1.png')">
+                    <img src="gallery/backgrounds/v6_breezegale_L1.png" alt="V6 Breezegale — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Breezegale — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="1" data-vision="6" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_breezegale_L2.png')">
+                    <img src="gallery/backgrounds/v6_breezegale_L2.png" alt="V6 Breezegale — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Breezegale — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="1" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_jugpot_L0.png')">
+                    <img src="gallery/backgrounds/v1_jugpot_L0.png" alt="V1 Jugpot — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Jugpot — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="1" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_jugpot_L1.png')">
+                    <img src="gallery/backgrounds/v1_jugpot_L1.png" alt="V1 Jugpot — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Jugpot — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="1" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_jugpot_L2.png')">
+                    <img src="gallery/backgrounds/v1_jugpot_L2.png" alt="V1 Jugpot — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Jugpot — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="2" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_jugpot_L0.png')">
+                    <img src="gallery/backgrounds/v2_jugpot_L0.png" alt="V2 Jugpot — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Jugpot — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="2" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_jugpot_L1.png')">
+                    <img src="gallery/backgrounds/v2_jugpot_L1.png" alt="V2 Jugpot — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Jugpot — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="2" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_jugpot_L2.png')">
+                    <img src="gallery/backgrounds/v2_jugpot_L2.png" alt="V2 Jugpot — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Jugpot — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="3" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_jugpot_L0.png')">
+                    <img src="gallery/backgrounds/v3_jugpot_L0.png" alt="V3 Jugpot — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Jugpot — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="3" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_jugpot_L1.png')">
+                    <img src="gallery/backgrounds/v3_jugpot_L1.png" alt="V3 Jugpot — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Jugpot — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="3" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_jugpot_L2.png')">
+                    <img src="gallery/backgrounds/v3_jugpot_L2.png" alt="V3 Jugpot — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Jugpot — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="4" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_jugpot_L0.png')">
+                    <img src="gallery/backgrounds/v4_jugpot_L0.png" alt="V4 Jugpot — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Jugpot — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="4" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_jugpot_L1.png')">
+                    <img src="gallery/backgrounds/v4_jugpot_L1.png" alt="V4 Jugpot — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Jugpot — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="4" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_jugpot_L2.png')">
+                    <img src="gallery/backgrounds/v4_jugpot_L2.png" alt="V4 Jugpot — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Jugpot — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="5" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_jugpot_L0.png')">
+                    <img src="gallery/backgrounds/v5_jugpot_L0.png" alt="V5 Jugpot — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Jugpot — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="5" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_jugpot_L1.png')">
+                    <img src="gallery/backgrounds/v5_jugpot_L1.png" alt="V5 Jugpot — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Jugpot — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="5" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_jugpot_L2.png')">
+                    <img src="gallery/backgrounds/v5_jugpot_L2.png" alt="V5 Jugpot — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Jugpot — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="6" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_jugpot_L0.png')">
+                    <img src="gallery/backgrounds/v6_jugpot_L0.png" alt="V6 Jugpot — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Jugpot — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="6" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_jugpot_L1.png')">
+                    <img src="gallery/backgrounds/v6_jugpot_L1.png" alt="V6 Jugpot — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Jugpot — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="2" data-vision="6" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_jugpot_L2.png')">
+                    <img src="gallery/backgrounds/v6_jugpot_L2.png" alt="V6 Jugpot — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Jugpot — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="1" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_forlock_L0.png')">
+                    <img src="gallery/backgrounds/v1_forlock_L0.png" alt="V1 Forlock — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Forlock — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="1" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_forlock_L1.png')">
+                    <img src="gallery/backgrounds/v1_forlock_L1.png" alt="V1 Forlock — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Forlock — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="1" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_forlock_L2.png')">
+                    <img src="gallery/backgrounds/v1_forlock_L2.png" alt="V1 Forlock — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Forlock — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="2" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_forlock_L0.png')">
+                    <img src="gallery/backgrounds/v2_forlock_L0.png" alt="V2 Forlock — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Forlock — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="2" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_forlock_L1.png')">
+                    <img src="gallery/backgrounds/v2_forlock_L1.png" alt="V2 Forlock — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Forlock — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="2" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_forlock_L2.png')">
+                    <img src="gallery/backgrounds/v2_forlock_L2.png" alt="V2 Forlock — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Forlock — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="3" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_forlock_L0.png')">
+                    <img src="gallery/backgrounds/v3_forlock_L0.png" alt="V3 Forlock — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Forlock — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="3" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_forlock_L1.png')">
+                    <img src="gallery/backgrounds/v3_forlock_L1.png" alt="V3 Forlock — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Forlock — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="3" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_forlock_L2.png')">
+                    <img src="gallery/backgrounds/v3_forlock_L2.png" alt="V3 Forlock — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Forlock — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="4" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_forlock_L0.png')">
+                    <img src="gallery/backgrounds/v4_forlock_L0.png" alt="V4 Forlock — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Forlock — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="4" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_forlock_L1.png')">
+                    <img src="gallery/backgrounds/v4_forlock_L1.png" alt="V4 Forlock — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Forlock — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="4" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_forlock_L2.png')">
+                    <img src="gallery/backgrounds/v4_forlock_L2.png" alt="V4 Forlock — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Forlock — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="5" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_forlock_L0.png')">
+                    <img src="gallery/backgrounds/v5_forlock_L0.png" alt="V5 Forlock — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Forlock — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="5" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_forlock_L1.png')">
+                    <img src="gallery/backgrounds/v5_forlock_L1.png" alt="V5 Forlock — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Forlock — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="5" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_forlock_L2.png')">
+                    <img src="gallery/backgrounds/v5_forlock_L2.png" alt="V5 Forlock — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Forlock — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="6" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_forlock_L0.png')">
+                    <img src="gallery/backgrounds/v6_forlock_L0.png" alt="V6 Forlock — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Forlock — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="6" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_forlock_L1.png')">
+                    <img src="gallery/backgrounds/v6_forlock_L1.png" alt="V6 Forlock — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Forlock — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="3" data-vision="6" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_forlock_L2.png')">
+                    <img src="gallery/backgrounds/v6_forlock_L2.png" alt="V6 Forlock — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Forlock — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="1" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_volk_L0.png')">
+                    <img src="gallery/backgrounds/v1_volk_L0.png" alt="V1 Volk — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Volk — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="1" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_volk_L1.png')">
+                    <img src="gallery/backgrounds/v1_volk_L1.png" alt="V1 Volk — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Volk — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="1" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_volk_L2.png')">
+                    <img src="gallery/backgrounds/v1_volk_L2.png" alt="V1 Volk — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Volk — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="2" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_volk_L0.png')">
+                    <img src="gallery/backgrounds/v2_volk_L0.png" alt="V2 Volk — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Volk — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="2" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_volk_L1.png')">
+                    <img src="gallery/backgrounds/v2_volk_L1.png" alt="V2 Volk — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Volk — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="2" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_volk_L2.png')">
+                    <img src="gallery/backgrounds/v2_volk_L2.png" alt="V2 Volk — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Volk — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="3" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_volk_L0.png')">
+                    <img src="gallery/backgrounds/v3_volk_L0.png" alt="V3 Volk — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Volk — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="3" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_volk_L1.png')">
+                    <img src="gallery/backgrounds/v3_volk_L1.png" alt="V3 Volk — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Volk — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="3" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_volk_L2.png')">
+                    <img src="gallery/backgrounds/v3_volk_L2.png" alt="V3 Volk — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Volk — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="4" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_volk_L0.png')">
+                    <img src="gallery/backgrounds/v4_volk_L0.png" alt="V4 Volk — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Volk — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="4" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_volk_L1.png')">
+                    <img src="gallery/backgrounds/v4_volk_L1.png" alt="V4 Volk — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Volk — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="4" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_volk_L2.png')">
+                    <img src="gallery/backgrounds/v4_volk_L2.png" alt="V4 Volk — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Volk — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="5" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_volk_L0.png')">
+                    <img src="gallery/backgrounds/v5_volk_L0.png" alt="V5 Volk — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Volk — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="5" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_volk_L1.png')">
+                    <img src="gallery/backgrounds/v5_volk_L1.png" alt="V5 Volk — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Volk — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="5" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_volk_L2.png')">
+                    <img src="gallery/backgrounds/v5_volk_L2.png" alt="V5 Volk — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Volk — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="6" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_volk_L0.png')">
+                    <img src="gallery/backgrounds/v6_volk_L0.png" alt="V6 Volk — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Volk — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="6" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_volk_L1.png')">
+                    <img src="gallery/backgrounds/v6_volk_L1.png" alt="V6 Volk — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Volk — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="4" data-vision="6" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_volk_L2.png')">
+                    <img src="gallery/backgrounds/v6_volk_L2.png" alt="V6 Volk — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Volk — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="1" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_ishras_viel_L0.png')">
+                    <img src="gallery/backgrounds/v1_ishras_viel_L0.png" alt="V1 Ishras Viel — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Ishras Viel — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="1" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_ishras_viel_L1.png')">
+                    <img src="gallery/backgrounds/v1_ishras_viel_L1.png" alt="V1 Ishras Viel — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Ishras Viel — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="1" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_ishras_viel_L2.png')">
+                    <img src="gallery/backgrounds/v1_ishras_viel_L2.png" alt="V1 Ishras Viel — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Ishras Viel — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="2" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_ishras_viel_L0.png')">
+                    <img src="gallery/backgrounds/v2_ishras_viel_L0.png" alt="V2 Ishras Viel — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Ishras Viel — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="2" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_ishras_viel_L1.png')">
+                    <img src="gallery/backgrounds/v2_ishras_viel_L1.png" alt="V2 Ishras Viel — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Ishras Viel — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="2" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_ishras_viel_L2.png')">
+                    <img src="gallery/backgrounds/v2_ishras_viel_L2.png" alt="V2 Ishras Viel — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Ishras Viel — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="3" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_ishras_viel_L0.png')">
+                    <img src="gallery/backgrounds/v3_ishras_viel_L0.png" alt="V3 Ishras Viel — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Ishras Viel — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="3" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_ishras_viel_L1.png')">
+                    <img src="gallery/backgrounds/v3_ishras_viel_L1.png" alt="V3 Ishras Viel — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Ishras Viel — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="3" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_ishras_viel_L2.png')">
+                    <img src="gallery/backgrounds/v3_ishras_viel_L2.png" alt="V3 Ishras Viel — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Ishras Viel — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="4" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_ishras_viel_L0.png')">
+                    <img src="gallery/backgrounds/v4_ishras_viel_L0.png" alt="V4 Ishras Viel — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Ishras Viel — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="4" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_ishras_viel_L1.png')">
+                    <img src="gallery/backgrounds/v4_ishras_viel_L1.png" alt="V4 Ishras Viel — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Ishras Viel — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="4" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_ishras_viel_L2.png')">
+                    <img src="gallery/backgrounds/v4_ishras_viel_L2.png" alt="V4 Ishras Viel — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Ishras Viel — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="5" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_ishras_viel_L0.png')">
+                    <img src="gallery/backgrounds/v5_ishras_viel_L0.png" alt="V5 Ishras Viel — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Ishras Viel — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="5" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_ishras_viel_L1.png')">
+                    <img src="gallery/backgrounds/v5_ishras_viel_L1.png" alt="V5 Ishras Viel — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Ishras Viel — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="5" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_ishras_viel_L2.png')">
+                    <img src="gallery/backgrounds/v5_ishras_viel_L2.png" alt="V5 Ishras Viel — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Ishras Viel — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="6" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_ishras_viel_L0.png')">
+                    <img src="gallery/backgrounds/v6_ishras_viel_L0.png" alt="V6 Ishras Viel — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Ishras Viel — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="6" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_ishras_viel_L1.png')">
+                    <img src="gallery/backgrounds/v6_ishras_viel_L1.png" alt="V6 Ishras Viel — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Ishras Viel — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="5" data-vision="6" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_ishras_viel_L2.png')">
+                    <img src="gallery/backgrounds/v6_ishras_viel_L2.png" alt="V6 Ishras Viel — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Ishras Viel — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="1" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_timber_tracks_L0.png')">
+                    <img src="gallery/backgrounds/v1_timber_tracks_L0.png" alt="V1 Timber Tracks — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Timber Tracks — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="1" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_timber_tracks_L1.png')">
+                    <img src="gallery/backgrounds/v1_timber_tracks_L1.png" alt="V1 Timber Tracks — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Timber Tracks — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="1" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_timber_tracks_L2.png')">
+                    <img src="gallery/backgrounds/v1_timber_tracks_L2.png" alt="V1 Timber Tracks — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Timber Tracks — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="2" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_timber_tracks_L0.png')">
+                    <img src="gallery/backgrounds/v2_timber_tracks_L0.png" alt="V2 Timber Tracks — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Timber Tracks — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="2" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_timber_tracks_L1.png')">
+                    <img src="gallery/backgrounds/v2_timber_tracks_L1.png" alt="V2 Timber Tracks — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Timber Tracks — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="2" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_timber_tracks_L2.png')">
+                    <img src="gallery/backgrounds/v2_timber_tracks_L2.png" alt="V2 Timber Tracks — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 Timber Tracks — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="3" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_timber_tracks_L0.png')">
+                    <img src="gallery/backgrounds/v3_timber_tracks_L0.png" alt="V3 Timber Tracks — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Timber Tracks — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="3" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_timber_tracks_L1.png')">
+                    <img src="gallery/backgrounds/v3_timber_tracks_L1.png" alt="V3 Timber Tracks — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Timber Tracks — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="3" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_timber_tracks_L2.png')">
+                    <img src="gallery/backgrounds/v3_timber_tracks_L2.png" alt="V3 Timber Tracks — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 Timber Tracks — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="4" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_timber_tracks_L0.png')">
+                    <img src="gallery/backgrounds/v4_timber_tracks_L0.png" alt="V4 Timber Tracks — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Timber Tracks — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="4" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_timber_tracks_L1.png')">
+                    <img src="gallery/backgrounds/v4_timber_tracks_L1.png" alt="V4 Timber Tracks — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Timber Tracks — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="4" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_timber_tracks_L2.png')">
+                    <img src="gallery/backgrounds/v4_timber_tracks_L2.png" alt="V4 Timber Tracks — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 Timber Tracks — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="5" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_timber_tracks_L0.png')">
+                    <img src="gallery/backgrounds/v5_timber_tracks_L0.png" alt="V5 Timber Tracks — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Timber Tracks — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="5" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_timber_tracks_L1.png')">
+                    <img src="gallery/backgrounds/v5_timber_tracks_L1.png" alt="V5 Timber Tracks — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Timber Tracks — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="5" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_timber_tracks_L2.png')">
+                    <img src="gallery/backgrounds/v5_timber_tracks_L2.png" alt="V5 Timber Tracks — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 Timber Tracks — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="6" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_timber_tracks_L0.png')">
+                    <img src="gallery/backgrounds/v6_timber_tracks_L0.png" alt="V6 Timber Tracks — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Timber Tracks — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="6" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_timber_tracks_L1.png')">
+                    <img src="gallery/backgrounds/v6_timber_tracks_L1.png" alt="V6 Timber Tracks — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Timber Tracks — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="6" data-vision="6" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_timber_tracks_L2.png')">
+                    <img src="gallery/backgrounds/v6_timber_tracks_L2.png" alt="V6 Timber Tracks — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 Timber Tracks — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="1" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_the_dark_L0.png')">
+                    <img src="gallery/backgrounds/v1_the_dark_L0.png" alt="V1 The Dark — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 The Dark — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="1" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_the_dark_L1.png')">
+                    <img src="gallery/backgrounds/v1_the_dark_L1.png" alt="V1 The Dark — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 The Dark — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="1" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_the_dark_L2.png')">
+                    <img src="gallery/backgrounds/v1_the_dark_L2.png" alt="V1 The Dark — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 The Dark — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="2" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_the_dark_L0.png')">
+                    <img src="gallery/backgrounds/v2_the_dark_L0.png" alt="V2 The Dark — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 The Dark — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="2" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_the_dark_L1.png')">
+                    <img src="gallery/backgrounds/v2_the_dark_L1.png" alt="V2 The Dark — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 The Dark — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="2" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_the_dark_L2.png')">
+                    <img src="gallery/backgrounds/v2_the_dark_L2.png" alt="V2 The Dark — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 The Dark — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="3" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_the_dark_L0.png')">
+                    <img src="gallery/backgrounds/v3_the_dark_L0.png" alt="V3 The Dark — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 The Dark — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="3" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_the_dark_L1.png')">
+                    <img src="gallery/backgrounds/v3_the_dark_L1.png" alt="V3 The Dark — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 The Dark — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="3" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_the_dark_L2.png')">
+                    <img src="gallery/backgrounds/v3_the_dark_L2.png" alt="V3 The Dark — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 The Dark — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="4" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_the_dark_L0.png')">
+                    <img src="gallery/backgrounds/v4_the_dark_L0.png" alt="V4 The Dark — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 The Dark — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="4" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_the_dark_L1.png')">
+                    <img src="gallery/backgrounds/v4_the_dark_L1.png" alt="V4 The Dark — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 The Dark — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="4" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_the_dark_L2.png')">
+                    <img src="gallery/backgrounds/v4_the_dark_L2.png" alt="V4 The Dark — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 The Dark — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="5" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_the_dark_L0.png')">
+                    <img src="gallery/backgrounds/v5_the_dark_L0.png" alt="V5 The Dark — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 The Dark — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="5" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_the_dark_L1.png')">
+                    <img src="gallery/backgrounds/v5_the_dark_L1.png" alt="V5 The Dark — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 The Dark — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="5" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_the_dark_L2.png')">
+                    <img src="gallery/backgrounds/v5_the_dark_L2.png" alt="V5 The Dark — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 The Dark — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="6" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_the_dark_L0.png')">
+                    <img src="gallery/backgrounds/v6_the_dark_L0.png" alt="V6 The Dark — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 The Dark — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="6" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_the_dark_L1.png')">
+                    <img src="gallery/backgrounds/v6_the_dark_L1.png" alt="V6 The Dark — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 The Dark — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="7" data-vision="6" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_the_dark_L2.png')">
+                    <img src="gallery/backgrounds/v6_the_dark_L2.png" alt="V6 The Dark — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 The Dark — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>512x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="1" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_ex_levels_L0.png')">
+                    <img src="gallery/backgrounds/v1_ex_levels_L0.png" alt="V1 EX Levels — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 EX Levels — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="1" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_ex_levels_L1.png')">
+                    <img src="gallery/backgrounds/v1_ex_levels_L1.png" alt="V1 EX Levels — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 EX Levels — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="1" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v1_ex_levels_L2.png')">
+                    <img src="gallery/backgrounds/v1_ex_levels_L2.png" alt="V1 EX Levels — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 EX Levels — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="2" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_ex_levels_L0.png')">
+                    <img src="gallery/backgrounds/v2_ex_levels_L0.png" alt="V2 EX Levels — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 EX Levels — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="2" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_ex_levels_L1.png')">
+                    <img src="gallery/backgrounds/v2_ex_levels_L1.png" alt="V2 EX Levels — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 EX Levels — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="2" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v2_ex_levels_L2.png')">
+                    <img src="gallery/backgrounds/v2_ex_levels_L2.png" alt="V2 EX Levels — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V2 EX Levels — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="3" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_ex_levels_L0.png')">
+                    <img src="gallery/backgrounds/v3_ex_levels_L0.png" alt="V3 EX Levels — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 EX Levels — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="3" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_ex_levels_L1.png')">
+                    <img src="gallery/backgrounds/v3_ex_levels_L1.png" alt="V3 EX Levels — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 EX Levels — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="3" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v3_ex_levels_L2.png')">
+                    <img src="gallery/backgrounds/v3_ex_levels_L2.png" alt="V3 EX Levels — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V3 EX Levels — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="4" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_ex_levels_L0.png')">
+                    <img src="gallery/backgrounds/v4_ex_levels_L0.png" alt="V4 EX Levels — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 EX Levels — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="4" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_ex_levels_L1.png')">
+                    <img src="gallery/backgrounds/v4_ex_levels_L1.png" alt="V4 EX Levels — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 EX Levels — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="4" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v4_ex_levels_L2.png')">
+                    <img src="gallery/backgrounds/v4_ex_levels_L2.png" alt="V4 EX Levels — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V4 EX Levels — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="5" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_ex_levels_L0.png')">
+                    <img src="gallery/backgrounds/v5_ex_levels_L0.png" alt="V5 EX Levels — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 EX Levels — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="5" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_ex_levels_L1.png')">
+                    <img src="gallery/backgrounds/v5_ex_levels_L1.png" alt="V5 EX Levels — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 EX Levels — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="5" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v5_ex_levels_L2.png')">
+                    <img src="gallery/backgrounds/v5_ex_levels_L2.png" alt="V5 EX Levels — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V5 EX Levels — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="6" data-layer="0">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_ex_levels_L0.png')">
+                    <img src="gallery/backgrounds/v6_ex_levels_L0.png" alt="V6 EX Levels — BG0 (far background)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 EX Levels — BG0 (far background)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="6" data-layer="1">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_ex_levels_L1.png')">
+                    <img src="gallery/backgrounds/v6_ex_levels_L1.png" alt="V6 EX Levels — BG1 (mid layer)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 EX Levels — BG1 (mid layer)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card bg-card" data-world="8" data-vision="6" data-layer="2">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/v6_ex_levels_L2.png')">
+                    <img src="gallery/backgrounds/v6_ex_levels_L2.png" alt="V6 EX Levels — BG2 (near/foreground)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V6 EX Levels — BG2 (near/foreground)</h3>
+                    <div class="meta">
+                        <span>256x256</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="section-header">
+            <h2>Raw Tile Sheets</h2>
+            <span class="count">12 compressed assets (Huffman + LZ77)</span>
+        </div>
+        <p>
+            World Map select screens and EX bonus level tile charblocks, shown as
+            raw sequential tile grids (not composed with tilemaps). These are loaded
+            via <code>ROM_GFX_ASSET_TABLE</code> for non-level screens.
         </p>
 
         <div class="gallery-grid">
+
+
             <div class="gallery-card">
                 <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_00.png')">
-                    <img src="gallery/backgrounds/gfx_00.png" alt="GFX Asset 0" loading="lazy">
+                    <img src="gallery/backgrounds/gfx_00.png" alt="World Map 1 — Bell Hill" loading="lazy">
                 </div>
                 <div class="info">
                     <h3>World Map 1 — Bell Hill</h3>
@@ -235,9 +2262,10 @@
                     </div>
                 </div>
             </div>
+
             <div class="gallery-card">
                 <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_01.png')">
-                    <img src="gallery/backgrounds/gfx_01.png" alt="GFX Asset 1" loading="lazy">
+                    <img src="gallery/backgrounds/gfx_01.png" alt="World Map 2 — Jugpot" loading="lazy">
                 </div>
                 <div class="info">
                     <h3>World Map 2 — Jugpot</h3>
@@ -248,9 +2276,10 @@
                     </div>
                 </div>
             </div>
+
             <div class="gallery-card">
                 <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_02.png')">
-                    <img src="gallery/backgrounds/gfx_02.png" alt="GFX Asset 2" loading="lazy">
+                    <img src="gallery/backgrounds/gfx_02.png" alt="World Map 3 — Forlock" loading="lazy">
                 </div>
                 <div class="info">
                     <h3>World Map 3 — Forlock</h3>
@@ -261,9 +2290,10 @@
                     </div>
                 </div>
             </div>
+
             <div class="gallery-card">
                 <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_03.png')">
-                    <img src="gallery/backgrounds/gfx_03.png" alt="GFX Asset 3" loading="lazy">
+                    <img src="gallery/backgrounds/gfx_03.png" alt="World Map 4 — Volk" loading="lazy">
                 </div>
                 <div class="info">
                     <h3>World Map 4 — Volk</h3>
@@ -274,9 +2304,10 @@
                     </div>
                 </div>
             </div>
+
             <div class="gallery-card">
                 <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_04.png')">
-                    <img src="gallery/backgrounds/gfx_04.png" alt="GFX Asset 4" loading="lazy">
+                    <img src="gallery/backgrounds/gfx_04.png" alt="World Map 5 — Ishras Viel" loading="lazy">
                 </div>
                 <div class="info">
                     <h3>World Map 5 — Ishras Viel</h3>
@@ -287,9 +2318,24 @@
                     </div>
                 </div>
             </div>
+
+            <div class="gallery-card">
+                <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_05.png')">
+                    <img src="gallery/backgrounds/gfx_05.png" alt="World Map 1 (dup)" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>World Map 1 (dup)</h3>
+                    <div class="meta">
+                        <span>0x32DF0C</span>
+                        <span>9,732 B</span>
+                        <span>304 tiles</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="gallery-card">
                 <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_06.png')">
-                    <img src="gallery/backgrounds/gfx_06.png" alt="GFX Asset 6" loading="lazy">
+                    <img src="gallery/backgrounds/gfx_06.png" alt="EX Vision 1" loading="lazy">
                 </div>
                 <div class="info">
                     <h3>EX Vision 1</h3>
@@ -300,9 +2346,10 @@
                     </div>
                 </div>
             </div>
+
             <div class="gallery-card">
                 <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_07.png')">
-                    <img src="gallery/backgrounds/gfx_07.png" alt="GFX Asset 7" loading="lazy">
+                    <img src="gallery/backgrounds/gfx_07.png" alt="EX Vision 2" loading="lazy">
                 </div>
                 <div class="info">
                     <h3>EX Vision 2</h3>
@@ -313,9 +2360,10 @@
                     </div>
                 </div>
             </div>
+
             <div class="gallery-card">
                 <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_08.png')">
-                    <img src="gallery/backgrounds/gfx_08.png" alt="GFX Asset 8" loading="lazy">
+                    <img src="gallery/backgrounds/gfx_08.png" alt="EX Vision 3" loading="lazy">
                 </div>
                 <div class="info">
                     <h3>EX Vision 3</h3>
@@ -326,9 +2374,10 @@
                     </div>
                 </div>
             </div>
+
             <div class="gallery-card">
                 <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_09.png')">
-                    <img src="gallery/backgrounds/gfx_09.png" alt="GFX Asset 9" loading="lazy">
+                    <img src="gallery/backgrounds/gfx_09.png" alt="EX Vision 4" loading="lazy">
                 </div>
                 <div class="info">
                     <h3>EX Vision 4</h3>
@@ -339,9 +2388,10 @@
                     </div>
                 </div>
             </div>
+
             <div class="gallery-card">
                 <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_10.png')">
-                    <img src="gallery/backgrounds/gfx_10.png" alt="GFX Asset 10" loading="lazy">
+                    <img src="gallery/backgrounds/gfx_10.png" alt="EX Vision 5" loading="lazy">
                 </div>
                 <div class="info">
                     <h3>EX Vision 5</h3>
@@ -352,9 +2402,10 @@
                     </div>
                 </div>
             </div>
+
             <div class="gallery-card">
                 <div class="preview" onclick="openLightbox('gallery/backgrounds/gfx_11.png')">
-                    <img src="gallery/backgrounds/gfx_11.png" alt="GFX Asset 11" loading="lazy">
+                    <img src="gallery/backgrounds/gfx_11.png" alt="EX Vision 6" loading="lazy">
                 </div>
                 <div class="info">
                     <h3>EX Vision 6</h3>
@@ -367,50 +2418,59 @@
             </div>
         </div>
 
+
         <div class="section-header">
             <h2>Sprite Palettes</h2>
             <span class="count">9 OBJ color palettes (GBA RGB555)</span>
         </div>
         <p>
-            Sprite (OBJ) palettes stored as arrays of 16-bit GBA RGB555 values.
-            These are loaded into OBJ palette RAM for character sprites and effects.
-            BG palettes are loaded separately from a 54-entry table at
-            <code>0x08188F5C</code>.
+            Sprite (OBJ) palettes loaded into OBJ palette RAM. BG palettes are
+            loaded separately from a 54-entry table at <code>0x08188F5C</code>.
         </p>
 
         <div class="palette-grid">
+
+
             <div class="palette-card">
                 <img src="gallery/palettes/palette_12.png" alt="Palette 12">
                 <div class="info">palette_12 (16 colors) @ 0x0789E8</div>
             </div>
+
             <div class="palette-card">
                 <img src="gallery/palettes/palette_13.png" alt="Palette 13">
                 <div class="info">palette_13 (16 colors) @ 0x078A48</div>
             </div>
+
             <div class="palette-card">
                 <img src="gallery/palettes/palette_14.png" alt="Palette 14">
                 <div class="info">palette_14 (256 colors) @ 0x078A68</div>
             </div>
+
             <div class="palette-card">
                 <img src="gallery/palettes/palette_15.png" alt="Palette 15">
                 <div class="info">palette_15 (256 colors) @ 0x078328</div>
             </div>
+
             <div class="palette-card">
                 <img src="gallery/palettes/palette_16.png" alt="Palette 16">
                 <div class="info">palette_16 (16 colors) @ 0x0D8DB0</div>
             </div>
+
             <div class="palette-card">
                 <img src="gallery/palettes/palette_17.png" alt="Palette 17">
                 <div class="info">palette_17 (16 colors) @ 0x078A08</div>
             </div>
+
             <div class="palette-card">
                 <img src="gallery/palettes/palette_18.png" alt="Palette 18">
                 <div class="info">palette_18 (16 colors) @ 0x0D8DD0</div>
             </div>
+
             <div class="palette-card">
                 <img src="gallery/palettes/palette_19.png" alt="Palette 19">
                 <div class="info">palette_19 (256 colors) @ 0x0D8DF0</div>
             </div>
+
             <div class="palette-card">
                 <img src="gallery/palettes/palette_20.png" alt="Palette 20">
                 <div class="info">palette_20 (16 colors) @ 0x078A28</div>
@@ -456,31 +2516,31 @@
                     <td><code>ROM_GFX_ASSET_TABLE</code></td>
                     <td><code>0x0818B7AC</code></td>
                     <td>59</td>
-                    <td>World map + EX level tiles (12), sprite palettes (9), sprite tile buffers (38)</td>
+                    <td>World map + EX level tiles, sprite palettes, sprite tile buffers</td>
                 </tr>
                 <tr>
                     <td><code>ROM_BG_TILE_TABLE</code></td>
                     <td><code>0x08189034</code></td>
                     <td>162</td>
-                    <td>BG tile data pointers (6 visions &times; 9 worldIDs &times; 3 layers)</td>
+                    <td>BG tile charblock data (6 visions &times; 9 worlds &times; 3 layers)</td>
                 </tr>
                 <tr>
                     <td><code>ROM_BG_TILEMAP_TABLE</code></td>
                     <td><code>0x081892BC</code></td>
                     <td>162</td>
-                    <td>BG tilemap pointers (parallel to tile table)</td>
+                    <td>BG screenblock tilemaps (parallel to tile table)</td>
                 </tr>
                 <tr>
                     <td><code>ROM_BG_PALETTE_TABLE</code></td>
                     <td><code>0x08188F5C</code></td>
                     <td>54</td>
-                    <td>BG palettes: 512-byte RGB555 blocks, indexed as (visionID-1)*9 + worldID</td>
+                    <td>BG palettes: 256-color RGB555, indexed as (visionID-1)*9 + worldID</td>
                 </tr>
                 <tr>
                     <td><code>ROM_TILESET_TABLE</code></td>
                     <td><code>0x0818B8E0</code></td>
                     <td>148</td>
-                    <td>Tileset data (sub-arrays of animation frame references)</td>
+                    <td>Tileset animation frame references</td>
                 </tr>
                 <tr>
                     <td><code>ROM_SPRITE_FRAME_TABLE</code></td>
@@ -507,6 +2567,20 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closeLightbox();
         });
+
+        function filterBackgrounds() {
+            var world = document.getElementById('world-filter').value;
+            var vision = document.getElementById('vision-filter').value;
+            var layer = document.getElementById('layer-filter').value;
+            var cards = document.querySelectorAll('.bg-card');
+            cards.forEach(function(card) {
+                var show = true;
+                if (world !== 'all' && card.dataset.world !== world) show = false;
+                if (vision !== 'all' && card.dataset.vision !== vision) show = false;
+                if (layer !== 'all' && card.dataset.layer !== layer) show = false;
+                card.classList.toggle('hidden', !show);
+            });
+        }
     </script>
 </body>
 </html>
