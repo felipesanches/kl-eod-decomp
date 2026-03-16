@@ -160,11 +160,16 @@
                 loadBar.style.width = '50%';
 
                 statusEl.textContent = 'Loading audio worklet...';
-                await ctx.audioWorklet.addModule(PROCESSOR_URL);
+                // Fetch processor and load via Blob URL to avoid scope issues
+                const procResp = await fetch(PROCESSOR_URL);
+                const procText = await procResp.text();
+                const procBlob = new Blob([procText], { type: 'application/javascript' });
+                const procURL = URL.createObjectURL(procBlob);
+                await ctx.audioWorklet.addModule(procURL);
+                URL.revokeObjectURL(procURL);
                 loadBar.style.width = '70%';
 
                 statusEl.textContent = 'Initializing synthesizer...';
-                // v3 API: Synthetizer(destinationNode, soundFontBuffer)
                 synth = new Synthetizer(ctx.destination, soundfontBuffer);
                 await synth.isReady;
                 loadBar.style.width = '100%';
