@@ -4,30 +4,35 @@
 @ Data section — tables, tilesets, sprites, palettes, etc.
 	.incbin "baserom.gba", 0x52000, 0x32DF0C - 0x52000
 
-@ Compressed background tile sheets (Huffman + LZ77)
+@ Compressed tile sheets (Huffman + LZ77)
 @ Indexed by ROM_GFX_ASSET_TABLE at 0x0818B7AC
-gfx_00: @ Vision 1 — Landscape / Platforms
+@ Index formula: (worldID >> 3) * 6 - 1 + visionID
+
+@ World Map select screen tiles (worldID=0, visionID 1-5)
+gfx_world_map_1: @ Bell Hill / Breezegale
 	.incbin "baserom.gba", 0x32DF0C, 0x32ECF0 - 0x32DF0C
-gfx_01: @ Vision 2 — Forest / Plants
+gfx_world_map_2: @ Jugpot
 	.incbin "baserom.gba", 0x32ECF0, 0x32F6E8 - 0x32ECF0
-gfx_02: @ Vision 3 — Ice / Water
+gfx_world_map_3: @ Forlock
 	.incbin "baserom.gba", 0x32F6E8, 0x33018C - 0x32F6E8
-gfx_03: @ Vision 4 — Buildings / Architecture
+gfx_world_map_4: @ Volk
 	.incbin "baserom.gba", 0x33018C, 0x330FC4 - 0x33018C
-gfx_04: @ Vision 5 — Temple / Palace
+gfx_world_map_5: @ Ishras Viel
 	.incbin "baserom.gba", 0x330FC4, 0x331E48 - 0x330FC4
-@ gfx_05 is a duplicate of gfx_00 (same ROM offset 0x32DF0C)
-gfx_06: @ World 2 — Forest World Tiles
+@ Index 5 is a duplicate of index 0 (same ROM offset 0x32DF0C)
+
+@ EX bonus level tiles (worldID=8, visionID 1-6)
+gfx_ex_vision_1:
 	.incbin "baserom.gba", 0x331E48, 0x33A734 - 0x331E48
-gfx_07: @ World 2 — Cave / Ruins Tiles
+gfx_ex_vision_2:
 	.incbin "baserom.gba", 0x33A734, 0x341DF8 - 0x33A734
-gfx_08: @ World 2 — Snow / Ice World
+gfx_ex_vision_3:
 	.incbin "baserom.gba", 0x341DF8, 0x3452A4 - 0x341DF8
-gfx_09: @ World 2 — Fire / Volcano Tiles
+gfx_ex_vision_4:
 	.incbin "baserom.gba", 0x3452A4, 0x34D190 - 0x3452A4
-gfx_10: @ World 2 — Sky / Cloud Tiles
+gfx_ex_vision_5:
 	.incbin "baserom.gba", 0x34D190, 0x354B2C - 0x34D190
-gfx_11: @ World 2 — Final World Tiles
+gfx_ex_vision_6:
 	.incbin "baserom.gba", 0x354B2C, 0x367604 - 0x354B2C
 
 @ Zero padding to fill ROM to 4MB

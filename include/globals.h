@@ -142,9 +142,46 @@
  * Used by InitOamEntries (FUN_0800a468). */
 #define ROM_OAM_TEMPLATE         0x080E2A7C
 
-/* Graphics asset / tileset tables used by InitGraphicsSystem. */
+/* Graphics asset table used by InitGraphicsSystem (FUN_08001158).
+ * 59 entries: indices 0-5 = world map select BG tiles (worldID=0),
+ * 6-11 = EX bonus level tiles (worldID=8), 12-20 = sprite palettes,
+ * 21-58 = pre-allocated sprite tile buffers.
+ * Index formula: (worldID >> 3) * 6 - 1 + visionID */
 #define ROM_GFX_ASSET_TABLE      0x0818B7AC
+
+/* GFX asset indices — World Map select screens (worldID=0, visionID 1-5) */
+#define GFX_ASSET_WORLD_MAP_1    0   /* Bell Hill / Breezegale */
+#define GFX_ASSET_WORLD_MAP_2    1   /* Jugpot */
+#define GFX_ASSET_WORLD_MAP_3    2   /* Forlock */
+#define GFX_ASSET_WORLD_MAP_4    3   /* Volk */
+#define GFX_ASSET_WORLD_MAP_5    4   /* Ishras Viel */
+
+/* GFX asset indices — EX bonus level tiles (worldID=8, visionID 1-6) */
+#define GFX_ASSET_EX_VISION_1    6
+#define GFX_ASSET_EX_VISION_2    7
+#define GFX_ASSET_EX_VISION_3    8
+#define GFX_ASSET_EX_VISION_4    9
+#define GFX_ASSET_EX_VISION_5   10
+#define GFX_ASSET_EX_VISION_6   11
+
+/* Tileset table (parallel to GFX asset table).
+ * Used by all worldIDs to load compressed BG tile/tilemap data. */
 #define ROM_TILESET_TABLE        0x0818B8E0
+
+/* BG tile data pointers: 162 entries (6 visions x 9 worldIDs x 3 layers). */
+#define ROM_BG_TILE_TABLE        0x08189034
+
+/* BG tilemap pointers: parallel to BG tile table. */
+#define ROM_BG_TILEMAP_TABLE     0x081892BC
+
+/* BG palette table: 54 entries indexed as (visionID-1)*9 + worldID.
+ * 512-byte RGB555 palette blocks loaded to BG palette RAM (0x05000000). */
+#define ROM_BG_PALETTE_TABLE     0x08188F5C
+
+/* World map completion overlays (used when all visions in a world are done). */
+#define ROM_COMPLETION_PALETTE   0x08189544
+#define ROM_COMPLETION_TILES     0x0818955C
+#define ROM_COMPLETION_TILEMAP   0x08189574
 
 /* ── Sound ROM Data Tables ── */
 
