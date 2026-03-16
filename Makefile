@@ -143,6 +143,18 @@ format:
 check_format:
 	$(FORMAT) -style=file --dry-run --Werror $(FORMAT_SRCS)
 
+### GRAPHICS EXTRACTION ###
+
+PYTHON := python3
+
+.PHONY: extract_gfx verify_gfx
+
+extract_gfx:
+	$(PYTHON) scripts/extract_gfx.py
+
+verify_gfx:
+	$(PYTHON) scripts/verify_gfx.py
+
 clean: tidy
 
 tidy:
