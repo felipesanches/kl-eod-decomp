@@ -241,6 +241,75 @@ def compose_bg(tiles_raw, tilemap_raw, palette_raw, map_w=32, map_h=32):
     return img
 
 
+def compose_bg_rgba(tiles_raw, tilemap_raw, palette_raw, map_w=32, map_h=32):
+    """Compose a GBA background with transparency (color 0 = transparent).
+
+    Same as compose_bg but returns RGBA image for layer compositing.
+    """
+    if len(tiles_raw) < 32 or len(tilemap_raw) < 2:
+        return None
+
+    palettes = []
+    for bank in range(16):
+        pal = []
+        for c in range(16):
+            off = (bank * 16 + c) * 2
+            if off + 1 < len(palette_raw):
+                c16 = struct.unpack_from('<H', palette_raw, off)[0]
+                pal.append(gba_rgb555_to_rgb888(c16))
+            else:
+                pal.append((0, 0, 0))
+        palettes.append(pal)
+
+    width = map_w * 8
+    height = map_h * 8
+    img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+    pixels = img.load()
+    num_tiles = len(tiles_raw) // 32
+
+    for my in range(map_h):
+        for mx in range(map_w):
+            idx = my * map_w + mx
+            if idx * 2 + 1 >= len(tilemap_raw):
+                continue
+            entry = struct.unpack_from('<H', tilemap_raw, idx * 2)[0]
+            tile_id = entry & 0x3FF
+            hflip = (entry >> 10) & 1
+            vflip = (entry >> 11) & 1
+            pal_bank = (entry >> 12) & 0xF
+            if tile_id >= num_tiles:
+                continue
+            pal = palettes[pal_bank]
+            tile_offset = tile_id * 32
+            px_x = mx * 8
+            px_y = my * 8
+
+            for ty in range(8):
+                for tx in range(0, 8, 2):
+                    byte_idx = tile_offset + ty * 4 + tx // 2
+                    if byte_idx >= len(tiles_raw):
+                        continue
+                    byte_val = tiles_raw[byte_idx]
+                    lo = byte_val & 0x0F
+                    hi = (byte_val >> 4) & 0x0F
+
+                    if hflip:
+                        dx0, dx1 = 7 - tx - 1, 7 - tx
+                        c0, c1 = hi, lo
+                    else:
+                        dx0, dx1 = tx, tx + 1
+                        c0, c1 = lo, hi
+
+                    dy = (7 - ty) if vflip else ty
+
+                    if c0 != 0 and px_x + dx0 < width and px_y + dy < height:
+                        pixels[px_x + dx0, px_y + dy] = pal[c0] + (255,)
+                    if c1 != 0 and px_x + dx1 < width and px_y + dy < height:
+                        pixels[px_x + dx1, px_y + dy] = pal[c1] + (255,)
+
+    return img
+
+
 def decompress_bg_asset(rom, offset):
     """Decompress a BG tile/tilemap/palette asset and strip the 4-byte sub-header."""
     result, _, _ = decompress_asset(rom, offset)
@@ -360,6 +429,88 @@ def extract_composed_backgrounds(rom, manifest):
                     print(f"  {name} ({img.width}x{img.height}) -> {png_path}")
 
     print(f"  Composed {composed_count} background layers total")
+
+    # Generate composite images (all 3 layers overlaid)
+    composite_dir = os.path.join(OUT_DIR, "composites")
+    os.makedirs(composite_dir, exist_ok=True)
+    composite_count = 0
+
+    for vision in range(1, 7):
+        for world in range(9):
+            pal_idx = (vision - 1) * 9 + world
+            if pal_idx >= len(pal_offsets) or pal_offsets[pal_idx] is None:
+                continue
+
+            try:
+                pal_raw = get_decomp(pal_offsets[pal_idx])
+            except Exception:
+                continue
+
+            world_name = WORLD_NAMES[world] if world < len(WORLD_NAMES) else f"world_{world}"
+
+            # Render all 3 layers with transparency
+            rgba_layers = []
+            max_w, max_h = 0, 0
+            for layer in range(3):
+                bg_idx = (vision - 1) * 27 + world * 3 + layer
+                if bg_idx >= len(tile_offsets):
+                    rgba_layers.append(None)
+                    continue
+                tile_off = tile_offsets[bg_idx]
+                tmap_off = tmap_offsets[bg_idx]
+                if tile_off is None or tmap_off is None:
+                    rgba_layers.append(None)
+                    continue
+                try:
+                    tiles = get_decomp(tile_off)
+                    tilemap = get_decomp(tmap_off)
+                except Exception:
+                    rgba_layers.append(None)
+                    continue
+                map_entries = len(tilemap) // 2
+                if map_entries >= 2048:
+                    mw, mh = 64, 32
+                elif map_entries >= 1024:
+                    mw, mh = 32, 32
+                else:
+                    mw, mh = 32, max(1, map_entries // 32)
+                layer_img = compose_bg_rgba(tiles, tilemap, pal_raw, mw, mh)
+                rgba_layers.append(layer_img)
+                if layer_img:
+                    max_w = max(max_w, layer_img.width)
+                    max_h = max(max_h, layer_img.height)
+
+            if max_w == 0 or max_h == 0:
+                continue
+
+            # Composite: L0 (back), L1 (mid), L2 (front)
+            composite = Image.new('RGBA', (max_w, max_h), (0, 0, 0, 255))
+            for layer_img in rgba_layers:
+                if layer_img is None:
+                    continue
+                # Tile the layer to fill the composite size (GBA wraps BG layers)
+                tiled = Image.new('RGBA', (max_w, max_h), (0, 0, 0, 0))
+                for tx in range(0, max_w, layer_img.width):
+                    for ty in range(0, max_h, layer_img.height):
+                        tiled.paste(layer_img, (tx, ty))
+                composite = Image.alpha_composite(composite, tiled)
+
+            name = f"v{vision}_{world_name}"
+            png_path = os.path.join(composite_dir, f"{name}.png")
+            composite.convert('RGB').save(png_path)
+            composite_count += 1
+
+            asset_info = {
+                "table": "BG_COMPOSITE",
+                "vision": vision,
+                "world": world,
+                "world_name": world_name,
+                "dimensions": f"{max_w}x{max_h}",
+                "png": png_path,
+            }
+            manifest["assets"].append(asset_info)
+
+    print(f"  Generated {composite_count} composite images")
 
 
 def find_compressed_size(rom, offset):
