@@ -241,7 +241,108 @@
 
 
         <div class="section-header">
-            <h2>Composed Level Backgrounds</h2>
+            <h2>Composite Backgrounds (All Layers)</h2>
+            <span class="count">54 scenes (6 visions &times; 9 worlds)</span>
+        </div>
+        <p>
+            All three BG layers composited together, simulating how they appear
+            in-game. Layer 0 (far background) is drawn first, then Layer 1 (mid),
+            then Layer 2 (near/foreground) on top. Color index 0 is transparent,
+            allowing lower layers to show through. Smaller layers are tiled to fill
+            the full width, matching GBA hardware wrapping behavior.
+        </p>
+
+        <div class="gallery-grid" id="composite-gallery">
+            <div class="gallery-card" data-world="1">
+                <div class="preview" onclick="openLightbox('gallery/composites/v1_breezegale.png')">
+                    <img src="gallery/composites/v1_breezegale.png" alt="V1 Breezegale" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Breezegale</h3>
+                    <div class="meta"><span>512x256</span></div>
+                </div>
+            </div>
+            <div class="gallery-card" data-world="2">
+                <div class="preview" onclick="openLightbox('gallery/composites/v1_jugpot.png')">
+                    <img src="gallery/composites/v1_jugpot.png" alt="V1 Jugpot" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Jugpot</h3>
+                    <div class="meta"><span>512x256</span></div>
+                </div>
+            </div>
+            <div class="gallery-card" data-world="3">
+                <div class="preview" onclick="openLightbox('gallery/composites/v1_forlock.png')">
+                    <img src="gallery/composites/v1_forlock.png" alt="V1 Forlock" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Forlock</h3>
+                    <div class="meta"><span>512x256</span></div>
+                </div>
+            </div>
+            <div class="gallery-card" data-world="4">
+                <div class="preview" onclick="openLightbox('gallery/composites/v1_volk.png')">
+                    <img src="gallery/composites/v1_volk.png" alt="V1 Volk" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Volk</h3>
+                    <div class="meta"><span>512x256</span></div>
+                </div>
+            </div>
+            <div class="gallery-card" data-world="5">
+                <div class="preview" onclick="openLightbox('gallery/composites/v1_ishras_viel.png')">
+                    <img src="gallery/composites/v1_ishras_viel.png" alt="V1 Ishras Viel" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Ishras Viel</h3>
+                    <div class="meta"><span>512x256</span></div>
+                </div>
+            </div>
+            <div class="gallery-card" data-world="6">
+                <div class="preview" onclick="openLightbox('gallery/composites/v1_timber_tracks.png')">
+                    <img src="gallery/composites/v1_timber_tracks.png" alt="V1 Timber Tracks" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 Timber Tracks</h3>
+                    <div class="meta"><span>512x256</span></div>
+                </div>
+            </div>
+            <div class="gallery-card" data-world="7">
+                <div class="preview" onclick="openLightbox('gallery/composites/v1_the_dark.png')">
+                    <img src="gallery/composites/v1_the_dark.png" alt="V1 The Dark" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 The Dark</h3>
+                    <div class="meta"><span>512x256</span></div>
+                </div>
+            </div>
+            <div class="gallery-card" data-world="8">
+                <div class="preview" onclick="openLightbox('gallery/composites/v1_ex_levels.png')">
+                    <img src="gallery/composites/v1_ex_levels.png" alt="V1 EX Levels" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 EX Levels</h3>
+                    <div class="meta"><span>512x256</span></div>
+                </div>
+            </div>
+            <div class="gallery-card" data-world="0">
+                <div class="preview" onclick="openLightbox('gallery/composites/v1_world_map.png')">
+                    <img src="gallery/composites/v1_world_map.png" alt="V1 World Map" loading="lazy">
+                </div>
+                <div class="info">
+                    <h3>V1 World Map</h3>
+                    <div class="meta"><span>256x256</span></div>
+                </div>
+            </div>
+        </div>
+
+        <details>
+            <summary>Show all 54 composites (all visions)</summary>
+            <div class="gallery-grid">
+        </details>
+
+        <div class="section-header">
+            <h2>Individual BG Layers</h2>
             <span class="count">162 layers (6 visions &times; 9 worlds &times; 3 BG layers)</span>
         </div>
         <p>
