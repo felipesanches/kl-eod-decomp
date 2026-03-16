@@ -397,8 +397,27 @@
                 <tr><td class="mono">0x0804E7D2</td><td>StreamCmd_StopSound</td><td>2</td><td>Stops sound effects</td></tr>
                 <tr><td class="mono">0x0804E7E6</td><td>StreamCmd_Nop3</td><td>3</td><td>No-op (advances stream by 3 bytes)</td></tr>
                 <tr><td class="mono">0x0804E7FA</td><td>StreamCmd_StopMusicAndDisableIRQ</td><td>2</td><td>Stops music and disables VBlank/HBlank interrupts</td></tr>
+                <tr><td class="mono">0x0804E42A</td><td>StreamCmd_ClearRenderMode</td><td>2</td><td>Clears render mode bits in level state</td></tr>
+                <tr><td class="mono">0x0804E5C6</td><td>StreamCmd_ToggleLayerFlag</td><td>2</td><td>Toggles bit 5 of layer state byte</td></tr>
+                <tr><td class="mono">0x0804E5F0</td><td>StreamCmd_SetBlendMode</td><td>4</td><td>Sets REG_BLDCNT from blend mode lookup table</td></tr>
+                <tr><td class="mono">0x0804E708</td><td>StreamCmd_SetWindowRegs</td><td>6</td><td>Writes REG_WININ and REG_WINOUT from stream</td></tr>
+                <tr><td class="mono">0x0804E73A</td><td>StreamCmd_EnableScrollMode</td><td>2</td><td>Sets scroll mode bits in level state</td></tr>
+                <tr><td class="mono">0x0804E814</td><td>StreamCmd_DisableVBlank</td><td>2</td><td>Disables VBlank IRQ and interrupt handlers</td></tr>
+                <tr><td class="mono">0x0804E8FE</td><td>StreamCmd_DisableVBlankAndStopMusic</td><td>2</td><td>Disables VBlank + stops all music</td></tr>
+                <tr><td class="mono">0x0804E974</td><td>StreamCmd_SetMusicParams</td><td>4</td><td>Sets music tempo/volume from stream data</td></tr>
+                <tr><td class="mono">0x0804E9DC</td><td>StreamCmd_ConfigureBlend</td><td>var</td><td>Configures blend mode, coefficients, and alpha</td></tr>
+                <tr><td class="mono">0x0804EA94</td><td>StreamCmd_RunScript</td><td>var</td><td>Runs an inline script sub-stream</td></tr>
+                <tr><td class="mono">0x0804C24C</td><td>StreamCmd_ConfigureSprite</td><td>var</td><td>Configures OAM sprite parameters from stream</td></tr>
             </tbody>
         </table>
+
+        <p>
+            The stream command system uses a <strong>dispatch table</strong> indexed by
+            the command opcode. Commands range from simple 2-byte operations (advance stream,
+            call one function) to complex variable-length scripts that configure multiple
+            hardware registers and manage sprite/palette state. A total of
+            <strong>22 stream commands</strong> have been identified so far.
+        </p>
 
         <!-- ===== Named Functions ===== -->
         <h2>Named Functions</h2>
@@ -444,6 +463,10 @@
                 <tr><td class="mono">0x0804E8FE</td><td>StreamCmd_DisableVBlankAndStopMusic</td><td>gfx</td><td>Disables VBlank + stops all music</td></tr>
                 <tr><td class="mono">0x08050134</td><td>StopSoundEffects</td><td>m4a</td><td>Stops sound effect playback channels</td></tr>
                 <tr><td class="mono">0x080500FC</td><td>StopAllMusicPlayers</td><td>m4a</td><td>Iterates ROM_MUSIC_TABLE to halt all 4 music players</td></tr>
+                <tr><td class="mono">0x0804BF7C</td><td>ShutdownGfxSubsystem</td><td>gfx</td><td>Tears down all graphics on scene exit (free chain + stop music)</td></tr>
+                <tr><td class="mono">0x0804BE08</td><td>SetupGfxCallbacks</td><td>gfx</td><td>Initializes VBlank/HBlank callback function pointers</td></tr>
+                <tr><td class="mono">0x08048768</td><td>FadeOutController</td><td>gfx</td><td>Manages BG scroll fade-out + callback transition</td></tr>
+                <tr><td class="mono">0x0804BDB4</td><td>InitLevelStateDefaults</td><td>gfx</td><td>Sets default map dimensions, scroll, window registers</td></tr>
             </tbody>
         </table>
 
