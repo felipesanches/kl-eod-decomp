@@ -768,6 +768,9 @@ def _manual_split_leaf(nm_root, module, parent_fname, trigger_instr,
         cpath = os.path.join(src_dir, cfname)
         with open(cpath) as f:
             clines = f.readlines()
+        # Skip if already present
+        if any(new_name in cl for cl in clines):
+            break
         for ci, cl in enumerate(clines):
             if parent_name in cl and "INCLUDE_ASM" in cl:
                 clines.insert(ci + 1, include_line)
