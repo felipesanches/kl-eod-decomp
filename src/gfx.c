@@ -81,7 +81,14 @@ INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804b4b0);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804b920);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bab4);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bad4);
-INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bafc);
+/*
+ * Frees the decompression buffer at 0x030007D0.
+ *   no parameters
+ *   no return value
+ */
+void FreeDecompBuffer(void) {
+    thunk_FUN_0800020c(gDecompBuffer);
+}
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bb12);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bb3c);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804bb74);
@@ -255,7 +262,18 @@ void DispatchMusicStreamCommand(void) {
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e7d2);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e7e6);
 INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e7fa);
-INCLUDE_ASM("asm/nonmatchings/gfx", FUN_0804e814);
+/*
+ * Disables VBlank interrupt and VBlank IRQ status, calls FUN_080505cc
+ * to clean up, then advances the data stream pointer by 2.
+ *   no parameters
+ *   no return value
+ */
+void DisableVBlankHandler(void) {
+    REG_IE &= ~IE_VBLANK;
+    REG_DISPSTAT &= ~DISPSTAT_VBLANK_IRQ_ENABLE;
+    FUN_080505cc();
+    gStreamPtr += 2;
+}
 /*
  * Enables VBlank interrupt and VBlank IRQ status, then calls
  * FUN_08050648 to set up the handler. Advances the data stream by 2.

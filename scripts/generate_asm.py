@@ -628,11 +628,15 @@ def _update_c_sources(merged_groups, module_funcs):
                     if m:
                         existing_in_c.add(m.group(1))
 
+    # Functions handled by _manual_split_leaf — skip auto-insertion
+    manual_split_targets = {"FUN_0804fe10"}
+
     # New functions: in module_funcs but not in C, not absorbed, not renamed
     new_by_module = {}  # module -> [(addr, name)]
     for module, func_list in module_funcs.items():
         for addr, name in func_list:
-            if name not in existing_in_c and name not in absorbed and name not in RENAMES:
+            if (name not in existing_in_c and name not in absorbed
+                    and name not in RENAMES and name not in manual_split_targets):
                 new_by_module.setdefault(module, []).append((addr, name))
 
     total_removed = total_added = 0
@@ -759,6 +763,7 @@ def _manual_split_leaf(nm_root, module, parent_fname, trigger_instr,
         f.writelines(new_lines)
 
     # Add INCLUDE_ASM to the C source, right after the parent's INCLUDE_ASM
+    # (only if not already present — _update_c_sources may have added it)
     parent_name = parent_fname[:-2]  # strip .s
     src_dir = os.path.join(ROOT, "src")
     include_line = f'INCLUDE_ASM("asm/nonmatchings/{module}", {new_name});\n'
@@ -768,6 +773,8 @@ def _manual_split_leaf(nm_root, module, parent_fname, trigger_instr,
         cpath = os.path.join(src_dir, cfname)
         with open(cpath) as f:
             clines = f.readlines()
+        if include_line in clines:
+            break
         for ci, cl in enumerate(clines):
             if parent_name in cl and "INCLUDE_ASM" in cl:
                 clines.insert(ci + 1, include_line)
@@ -965,12 +972,22 @@ def _generate_rom_header():
 
 
 def _generate_data_s():
-    """Generate data/data.s with .incbin for the data section."""
+    """Generate data/data.s with .incbin for the data section.
+
+    The ROM is exactly 4MB (0x400000 bytes). Data ends at 0x367604, followed
+    by zero padding to fill to the full 4MB boundary.
+    """
+    ROM_SIZE = 0x400000
+    DATA_END = 0x367604
     output = os.path.join(ROOT, "data", "data.s")
     os.makedirs(os.path.dirname(output), exist_ok=True)
     with open(output, "w") as f:
-        f.write(".syntax unified\n.text\n\n@ Data section\n")
-        f.write(f'\t.incbin "baserom.gba", 0x{DATA_START:X}\n')
+        f.write(".syntax unified\n.text\n\n")
+        f.write("@ Data section — tables, tilesets, sprites, palettes, etc.\n")
+        f.write(f'\t.incbin "baserom.gba", 0x{DATA_START:X}, '
+                f'0x{DATA_END:X} - 0x{DATA_START:X}\n\n')
+        f.write(f"@ Zero padding to fill ROM to 4MB\n")
+        f.write(f"\t.fill 0x{ROM_SIZE:X} - 0x{DATA_END:X}, 1, 0\n")
     print(f"  Generated {output}")
 
 

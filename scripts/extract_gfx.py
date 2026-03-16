@@ -30,6 +30,22 @@ OUT_DIR = "graphics"
 ROM_GFX_ASSET_TABLE = 0x18B7AC
 ROM_TILESET_TABLE = 0x18B8E0
 ROM_SPRITE_FRAME_TABLE = 0x78FC8
+ROM_BG_TILE_TABLE = 0x189034
+ROM_BG_TILEMAP_TABLE = 0x1892BC
+ROM_BG_PALETTE_TABLE = 0x188F5C
+
+# World names for readable filenames
+WORLD_NAMES = [
+    "world_map",       # 0
+    "breezegale",      # 1 (Bell Hill)
+    "jugpot",          # 2
+    "forlock",         # 3
+    "volk",            # 4
+    "ishras_viel",     # 5 (Ishras Viel / Baladium)
+    "timber_tracks",   # 6
+    "the_dark",        # 7 (Garlen's lair)
+    "ex_levels",       # 8
+]
 
 # Default grayscale palette for 4bpp (16 colors)
 GRAYSCALE_4BPP = [(i * 17, i * 17, i * 17) for i in range(16)]
@@ -135,6 +151,215 @@ def render_8bpp_tiles(tile_data, palette, tiles_per_row=16):
                     pixels[tx + x, ty + y] = palette[px]
 
     return img
+
+
+def compose_bg(tiles_raw, tilemap_raw, palette_raw, map_w=32, map_h=32):
+    """Compose a GBA background from tile charblock, tilemap, and palette data.
+
+    Arranges 8x8 tiles according to the tilemap, applying palette bank selection
+    and horizontal/vertical flip flags per the GBA BG screenblock format.
+
+    Args:
+        tiles_raw: raw 4bpp tile data (32 bytes per 8x8 tile)
+        tilemap_raw: GBA screenblock entries (u16 per cell)
+        tilemap_raw format: bits 0-9 = tile ID, bit 10 = hflip,
+                           bit 11 = vflip, bits 12-15 = palette bank
+        palette_raw: 512 bytes of GBA RGB555 palette (16 banks x 16 colors)
+        map_w: tilemap width in tiles (default 32)
+        map_h: tilemap height in tiles (default 32)
+
+    Returns:
+        PIL Image or None if data is insufficient
+    """
+    if len(tiles_raw) < 32 or len(tilemap_raw) < 2:
+        return None
+
+    # Parse all 16 palette banks (16 colors each for 4bpp)
+    palettes = []
+    for bank in range(16):
+        pal = []
+        for c in range(16):
+            off = (bank * 16 + c) * 2
+            if off + 1 < len(palette_raw):
+                c16 = struct.unpack_from('<H', palette_raw, off)[0]
+                pal.append(gba_rgb555_to_rgb888(c16))
+            else:
+                pal.append((0, 0, 0))
+        palettes.append(pal)
+
+    width = map_w * 8
+    height = map_h * 8
+    img = Image.new('RGB', (width, height), (0, 0, 0))
+    pixels = img.load()
+
+    num_tiles = len(tiles_raw) // 32
+
+    for my in range(map_h):
+        for mx in range(map_w):
+            idx = my * map_w + mx
+            if idx * 2 + 1 >= len(tilemap_raw):
+                continue
+            entry = struct.unpack_from('<H', tilemap_raw, idx * 2)[0]
+            tile_id = entry & 0x3FF
+            hflip = (entry >> 10) & 1
+            vflip = (entry >> 11) & 1
+            pal_bank = (entry >> 12) & 0xF
+
+            if tile_id >= num_tiles:
+                continue
+
+            pal = palettes[pal_bank]
+            tile_offset = tile_id * 32
+            px_x = mx * 8
+            px_y = my * 8
+
+            for ty in range(8):
+                for tx in range(0, 8, 2):
+                    byte_idx = tile_offset + ty * 4 + tx // 2
+                    if byte_idx >= len(tiles_raw):
+                        continue
+                    byte_val = tiles_raw[byte_idx]
+                    lo = byte_val & 0x0F
+                    hi = (byte_val >> 4) & 0x0F
+
+                    if hflip:
+                        dx0 = 7 - tx - 1
+                        dx1 = 7 - tx
+                        c0, c1 = hi, lo
+                    else:
+                        dx0 = tx
+                        dx1 = tx + 1
+                        c0, c1 = lo, hi
+
+                    dy = (7 - ty) if vflip else ty
+
+                    if px_x + dx0 < width and px_y + dy < height:
+                        pixels[px_x + dx0, px_y + dy] = pal[c0]
+                    if px_x + dx1 < width and px_y + dy < height:
+                        pixels[px_x + dx1, px_y + dy] = pal[c1]
+
+    return img
+
+
+def decompress_bg_asset(rom, offset):
+    """Decompress a BG tile/tilemap/palette asset and strip the 4-byte sub-header."""
+    result, _, _ = decompress_asset(rom, offset)
+    return result[4:]
+
+
+def extract_composed_backgrounds(rom, manifest):
+    """Extract and compose all level backgrounds using tile + tilemap + palette tables.
+
+    Reads ROM_BG_TILE_TABLE (162 entries), ROM_BG_TILEMAP_TABLE (162 entries),
+    and ROM_BG_PALETTE_TABLE (54 entries) to produce composed PNG images for
+    every vision/world/layer combination.
+
+    Table indexing:
+        BG tiles/tilemaps: 162 entries = 6 visions x 9 worlds x 3 layers
+            index = (vision-1) * 27 + world * 3 + layer
+        BG palettes: 54 entries = 6 visions x 9 worlds
+            index = (vision-1) * 9 + world
+    """
+    print("\n=== Extracting Composed Backgrounds ===")
+
+    # Read all three tables
+    tile_offsets = []
+    tmap_offsets = []
+    pal_offsets = []
+
+    for i in range(162):
+        val = struct.unpack_from('<I', rom, ROM_BG_TILE_TABLE + i * 4)[0]
+        tile_offsets.append(val - 0x08000000 if val >= 0x08000000 else None)
+
+    for i in range(162):
+        val = struct.unpack_from('<I', rom, ROM_BG_TILEMAP_TABLE + i * 4)[0]
+        tmap_offsets.append(val - 0x08000000 if val >= 0x08000000 else None)
+
+    for i in range(54):
+        val = struct.unpack_from('<I', rom, ROM_BG_PALETTE_TABLE + i * 4)[0]
+        pal_offsets.append(val - 0x08000000 if val >= 0x08000000 else None)
+
+    out_dir = os.path.join(OUT_DIR, "backgrounds")
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Cache decompressed data to avoid redundant work (some entries share offsets)
+    decomp_cache = {}
+
+    def get_decomp(offset):
+        if offset not in decomp_cache:
+            decomp_cache[offset] = decompress_bg_asset(rom, offset)
+        return decomp_cache[offset]
+
+    composed_count = 0
+
+    for vision in range(1, 7):  # visions 1-6
+        for world in range(9):  # worlds 0-8
+            pal_idx = (vision - 1) * 9 + world
+            if pal_idx >= len(pal_offsets) or pal_offsets[pal_idx] is None:
+                continue
+
+            try:
+                pal_raw = get_decomp(pal_offsets[pal_idx])
+            except Exception as e:
+                print(f"  v{vision}/w{world} palette FAILED: {e}")
+                continue
+
+            world_name = WORLD_NAMES[world] if world < len(WORLD_NAMES) else f"world_{world}"
+
+            for layer in range(3):
+                bg_idx = (vision - 1) * 27 + world * 3 + layer
+                if bg_idx >= len(tile_offsets):
+                    continue
+
+                tile_off = tile_offsets[bg_idx]
+                tmap_off = tmap_offsets[bg_idx]
+                if tile_off is None or tmap_off is None:
+                    continue
+
+                try:
+                    tiles = get_decomp(tile_off)
+                    tilemap = get_decomp(tmap_off)
+                except Exception as e:
+                    print(f"  v{vision}/{world_name}/L{layer} FAILED: {e}")
+                    continue
+
+                # Determine tilemap dimensions from size
+                map_entries = len(tilemap) // 2
+                if map_entries >= 2048:
+                    map_w, map_h = 64, 32
+                elif map_entries >= 1024:
+                    map_w, map_h = 32, 32
+                else:
+                    map_w = 32
+                    map_h = max(1, map_entries // 32)
+
+                img = compose_bg(tiles, tilemap, pal_raw, map_w, map_h)
+                if img is None:
+                    continue
+
+                name = f"v{vision}_{world_name}_L{layer}"
+                png_path = os.path.join(out_dir, f"{name}.png")
+                img.save(png_path)
+                composed_count += 1
+
+                asset_info = {
+                    "table": "BG_COMPOSED",
+                    "vision": vision,
+                    "world": world,
+                    "world_name": world_name,
+                    "layer": layer,
+                    "tile_offset": f"0x{tile_off:06X}",
+                    "tilemap_offset": f"0x{tmap_off:06X}",
+                    "palette_offset": f"0x{pal_offsets[pal_idx]:06X}",
+                    "dimensions": f"{img.width}x{img.height}",
+                    "png": png_path,
+                }
+                manifest["assets"].append(asset_info)
+
+                if composed_count <= 10 or composed_count % 20 == 0:
+                    print(f"  {name} ({img.width}x{img.height}) -> {png_path}")
+
+    print(f"  Composed {composed_count} background layers total")
 
 
 def find_compressed_size(rom, offset):
@@ -409,6 +634,7 @@ def main():
     }
 
     extract_gfx_assets(rom, manifest)
+    extract_composed_backgrounds(rom, manifest)
     extract_tileset_data(rom, manifest)
     extract_sprite_frames(rom, manifest)
 
