@@ -295,6 +295,11 @@
             <li><strong>StopSoundChannel</strong> &mdash; stop a single sound channel</li>
             <li><strong>PlaySoundWithContext_D8/DC</strong> &mdash; trigger sound effect playback</li>
             <li><strong>SoundCommand_6450</strong> &mdash; sound command dispatch</li>
+            <li><strong>MPlayMain_SetAndProcess</strong> &mdash; store to gSoundInfo + call MidiProcessEvent</li>
+            <li><strong>SoundCmd_Dispatch</strong> &mdash; read command byte, dispatch via ROM table</li>
+            <li><strong>StreamCmd_StopSoundAndSync</strong> &mdash; stop sound, sync freq to BG scroll</li>
+            <li><strong>StreamCmd_SetSoundFreqs</strong> &mdash; read two u16 frequencies from stream</li>
+            <li><strong>FreeAllDecompBuffers</strong> &mdash; free 6 decomp buffers + stop 4 music channels</li>
         </ul>
     </div>
 
