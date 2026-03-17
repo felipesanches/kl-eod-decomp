@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matching Techniques &amp; Blockers — Klonoa: EoD Decomp</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .technique-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin: 1rem 0;
+        }
+        .technique-card h3 {
+            color: #86efac;
+            margin-top: 0;
+        }
+        .blocker-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin: 1rem 0;
+        }
+        .blocker-card h3 {
+            color: #fca5a5;
+            margin-top: 0;
+        }
+        .code-compare {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 0.75rem 0;
+        }
+        .code-compare > div {
+            background: #0f172a;
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-size: 0.85rem;
+        }
+        .code-compare .label {
+            color: #64748b;
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .tag-solved { color: #86efac; font-weight: 700; }
+        .tag-blocker { color: #fca5a5; font-weight: 700; }
+        .tag-partial { color: #fde68a; font-weight: 700; }
+        .count-table td { padding: 0.25rem 1rem 0.25rem 0; }
+        .count-table td:first-child { font-family: monospace; color: #93c5fd; }
+        @media (max-width: 700px) {
+            .code-compare { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html" class="site-title">Klonoa: EoD Decomp</a>
+        <ul class="nav-links">
+            <li><a href="index.html">Overview</a></li>
+            <li><a href="flowchart.html">Program Flow</a></li>
+            <li><a href="matching.html" class="active">Matching</a></li>
+            <li><a href="sound.html">Sound Engine</a></li>
+            <li><a href="music.html">Music Player</a></li>
+            <li><a href="gallery.html">Graphics</a></li>
+            <li><a href="graphics-engine.html">Graphics Engine</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>Matching Techniques &amp; Blockers</h1>
+        <p>
+            This page documents everything we've learned about producing byte-exact C matches
+            with <strong>agbcc</strong> (a GCC 2.95 fork targeting ARM7TDMI Thumb). Of 463 functions,
+            52 are fully matched. The remaining 411 are understood (all have semantic names and docstrings)
+            but blocked by compiler code generation differences.
+        </p>
+
+        <!-- ===== Current State ===== -->
+        <h2>Current State by Module</h2>
+        <table class="count-table">
+            <tr><td>system.c</td><td>4 of 14 matched</td><td>(FixedMul8, FreeAllDecompBuffers, ...)</td></tr>
+            <tr><td>math.c</td><td>0 of 4</td><td>(all non-word-aligned or leaf)</td></tr>
+            <tr><td>engine.c</td><td>7 of 25</td><td>(OAM clears, video state, fade effect, ...)</td></tr>
+            <tr><td>code_0.c</td><td>0 of 27</td><td>(large rendering functions)</td></tr>
+            <tr><td>code_1.c</td><td>3 of 121</td><td>(TransitionToWorldMap, TransitionSoftReset, ...)</td></tr>
+            <tr><td>code_3.c</td><td>2 of 142</td><td>(IsSelectButtonPressed, GetEntityLookupData)</td></tr>
+            <tr><td>gfx.c</td><td>20 of 137</td><td>(decompression, stream commands, callbacks, ...)</td></tr>
+            <tr><td>m4a.c</td><td>16 of 38</td><td>(MPlayStop, InitSceneState, stream commands, ...)</td></tr>
+            <tr><td>util.c</td><td>0 of 9</td><td>(all blocked by loop/increment patterns)</td></tr>
+        </table>
+
+        <!-- ===== Solved Techniques ===== -->
+        <h2>Solved Techniques</h2>
+        <p>These techniques allow us to control agbcc's code generation to match the original ROM.</p>
+
+        <div class="technique-card">
+            <h3>1. ASM Barrier for Constant Load Scheduling <span class="tag-solved">SOLVED</span></h3>
+            <p>
+                <strong>Problem:</strong> agbcc loads literal pool constants <em>after</em> computing ALU operations on arguments.
+                The original code loads constants <em>before</em> the ALU operations (filling pipeline stall slots).
+            </p>
+            <div class="code-compare">
+                <div>
+                    <div class="label">Original (ROM)</div>
+                    <pre><code>ldr r1, =TABLE    ; load first
+lsls r0, r0, #2   ; then compute
+adds r0, r0, r1</code></pre>
+                </div>
+                <div>
+                    <div class="label">agbcc default</div>
+                    <pre><code>lsls r0, r0, #2   ; compute first
+ldr r1, =TABLE    ; then load
+adds r0, r0, r1</code></pre>
+                </div>
+            </div>
+            <p>
+                <strong>Solution:</strong> Use an inline asm barrier to force the constant into a register
+                at a specific point in the code:
+            </p>
+            <pre><code>u32 addr = 0x08189B4C;
+u32 *table;
+asm("" : "=r"(table) : "0"(addr));
+// compiler now loads addr via ldr BEFORE any subsequent code</code></pre>
+            <p><strong>Matched:</strong> FinalizeLevelLayerSetup, LoadAndDecompressStream, TransitionToWorldMap,
+            FadeOutController, SetupGfxCallbacks, all m4a stream commands, and ~20 more.</p>
+        </div>
+
+        <div class="technique-card">
+            <h3>2. Shift-Pair Interleaving <span class="tag-solved">SOLVED</span></h3>
+            <p>
+                <strong>Problem:</strong> When zero-extending a parameter to u16 (<code>lsls r0, #16; lsrs r0, #13</code>),
+                the original interleaves constant loads <em>between</em> the two shifts. agbcc keeps the shifts together.
+            </p>
+            <div class="code-compare">
+                <div>
+                    <div class="label">Original</div>
+                    <pre><code>lsls r0, r0, #16   ; start truncation
+ldr r2, =BASE      ; interleaved load
+ldr r1, =TABLE     ; interleaved load
+lsrs r0, r0, #13   ; finish truncation</code></pre>
+                </div>
+                <div>
+                    <div class="label">Solution</div>
+                    <pre><code>u32 shifted = idx &lt;&lt; 16;
+asm("" : "+r"(shifted)); // force materialization
+asm("" : "=r"(base) : "0"(a0));
+asm("" : "=r"(table) : "0"(a1));
+shifted >>= 13; // now after the loads</code></pre>
+                </div>
+            </div>
+            <p><strong>Matched:</strong> GetEntityLookupData, InitSceneState, m4aSongNumStop, m4aMPlayCommand.</p>
+        </div>
+
+        <div class="technique-card">
+            <h3>3. Integer Arithmetic for <code>adds</code> Operand Order <span class="tag-solved">SOLVED</span></h3>
+            <p>
+                <strong>Problem:</strong> <code>table + offset</code> compiles to <code>adds rTABLE, rTABLE, rOFF</code>
+                (result in table's register), but the original has <code>adds rOFF, rOFF, rTABLE</code> (result in offset's register).
+            </p>
+            <p>
+                <strong>Solution:</strong> Use integer arithmetic instead of pointer arithmetic:
+            </p>
+            <pre><code>// Instead of: entry = table + offset;
+// Write:
+offset += (u32)table;
+entry = (u8 *)offset;
+// Result stays in offset's register</code></pre>
+            <p><strong>Matched:</strong> GetEntityLookupData, InitSceneState, m4aSongNumStop, m4aMPlayCommand.</p>
+        </div>
+
+        <div class="technique-card">
+            <h3>4. Forced Dead Copy via <code>register asm</code> <span class="tag-solved">SOLVED</span></h3>
+            <p>
+                <strong>Problem:</strong> GCC 2.95 sometimes generates a copy instruction (<code>adds r1, r0, #0</code>)
+                before modifying a value. Modern optimization would eliminate this dead copy. We need it for matching.
+            </p>
+            <pre><code>s32 result = (s32)a * (s32)b;
+register s32 shifted asm("r1");
+shifted = result;                // forces: adds r1, r0, #0
+asm("" : "+r"(shifted));         // prevent optimization
+if (result &lt; 0) shifted += 0xFF; // modifies r1, checks r0</code></pre>
+            <p><strong>Matched:</strong> FixedMul8 (8.8 fixed-point multiply).</p>
+        </div>
+
+        <div class="technique-card">
+            <h3>5. Memory-Before-Constant Scheduling <span class="tag-solved">SOLVED</span></h3>
+            <p>
+                <strong>Problem:</strong> When loading both a memory value and a constant, the compiler
+                may schedule the constant load first. The original loads from memory first.
+            </p>
+            <pre><code>u32 val = sceneCtrl[0];       // memory load
+asm("" : "+r"(val));          // force it to materialize NOW
+u32 addr = 0x03005498;
+u8 *fadeCounter;
+asm("" : "=r"(fadeCounter) : "0"(addr)); // constant load AFTER</code></pre>
+            <p><strong>Matched:</strong> FadeOutController.</p>
+        </div>
+
+        <div class="technique-card">
+            <h3>6. Return Type for Pop Register Selection <span class="tag-solved">SOLVED</span></h3>
+            <p>
+                <strong>Problem:</strong> Non-leaf functions end with <code>pop {rN}; bx rN</code>. Most use r0,
+                but some use r1 (to preserve the return value in r0). agbcc always uses r0 for void functions.
+            </p>
+            <p>
+                <strong>Solution:</strong> Declare the function and its callee as returning <code>u32</code>.
+                The compiler then preserves r0 for the return value and pops to r1.
+            </p>
+            <pre><code>u32 MidiProcessEvent(void);     // declare as returning u32
+u32 MPlayMain_SetAndProcess(u32 val) {
+    // ...
+    return MidiProcessEvent();  // compiler uses pop {r1}; bx r1
+}</code></pre>
+            <p><strong>Matched:</strong> MPlayMain_SetAndProcess.</p>
+        </div>
+
+        <div class="technique-card">
+            <h3>7. <code>-fprologue-bugfix</code> Compiler Flag <span class="tag-solved">SOLVED</span></h3>
+            <p>
+                <strong>Problem:</strong> agbcc generates <code>push {lr}; ... pop {r0}; bx r0</code> for leaf functions
+                that don't need to save lr. The original uses direct <code>bx lr</code>.
+            </p>
+            <p>
+                <strong>Solution:</strong> Add <code>-fprologue-bugfix</code> to CC1FLAGS. This makes the compiler
+                emit <code>bx lr</code> for true leaf functions (no calls, no callee-saved registers needed).
+            </p>
+            <p><strong>Matched:</strong> All leaf functions without callee-saved registers (ReadUnalignedU16, etc.).</p>
+        </div>
+
+        <!-- ===== Remaining Blockers ===== -->
+        <h2>Remaining Blockers</h2>
+        <p>
+            These patterns prevent matching the remaining ~411 functions. Each affects a different
+            subset of the codebase. Solving any one of them would unlock dozens of new matches.
+        </p>
+
+        <div class="blocker-card">
+            <h3>A. <code>tst</code> vs <code>ands</code> for Bitflag Checks <span class="tag-blocker">~60 functions</span></h3>
+            <p>
+                When checking <code>if (flags &amp; MASK)</code>, the original generates <code>tst r0, r1</code>
+                (test without storing result). agbcc generates <code>ands r0, r1</code> (AND with store).
+                Both set the same flags, but encode as different opcodes.
+            </p>
+            <div class="code-compare">
+                <div>
+                    <div class="label">Original</div>
+                    <pre><code>movs r0, #0x80
+tst r0, r1      ; 4208 — test only
+beq skip</code></pre>
+                </div>
+                <div>
+                    <div class="label">agbcc generates</div>
+                    <pre><code>movs r1, #0x80
+ands r0, r1     ; 4008 — AND + store
+cmp r0, #0
+beq skip</code></pre>
+                </div>
+            </div>
+            <p>
+                <strong>Affected:</strong> SoundContextRef, VoiceLookupAndApply, MPlayContinue,
+                many entity behavior functions, all functions that check bit flags.
+            </p>
+            <p><strong>Status:</strong> No known workaround. May require agbcc compiler modification.</p>
+        </div>
+
+        <div class="blocker-card">
+            <h3>B. Leaf Functions with Unnecessary <code>push {rN, lr}</code> <span class="tag-blocker">~40 functions</span></h3>
+            <p>
+                Leaf functions (no <code>bl</code> calls) that use callee-saved registers (r4-r7) have
+                <code>push {r4, lr}</code> in the original. With <code>-fprologue-bugfix</code>, agbcc generates
+                <code>push {r4}</code> (without lr) and <code>pop {r4}; bx lr</code>. The original has
+                <code>push {r4, lr}; ... pop {r4}; pop {r0}; bx r0</code>.
+            </p>
+            <p>
+                <strong>Affected:</strong> EnableInterruptsAfterGfxSetup, StreamCmd_SetSoundReverb,
+                all stream command leaf handlers that use r4+, DmaSpriteToObjVram, SetPaletteAnimEntry.
+            </p>
+            <p>
+                <strong>Dilemma:</strong> Removing <code>-fprologue-bugfix</code> would fix these but break
+                all the simpler leaf functions (bx lr) that currently match.
+                Per-function compiler flags are not supported by the build system.
+            </p>
+        </div>
+
+        <div class="blocker-card">
+            <h3>C. Non-Word-Aligned Function Starts <span class="tag-blocker">~20 functions</span></h3>
+            <p>
+                Some functions start at 2-byte-aligned addresses (<code>non_word_aligned_thumb_func_start</code>).
+                C functions always start at 4-byte-aligned addresses. Replacing these with C adds
+                2 bytes of alignment padding, shifting all subsequent code.
+            </p>
+            <p>
+                <strong>Affected:</strong> StreamCmd_StopSound, StreamCmd_Nop3, StreamCmd_ClearRenderMode,
+                HBlankScrollUpdate, AcknowledgeInterrupt, FixedMul4, many m4a command handlers
+                (MPlayCmd_SetBendRange, MPlayCmd_SetLFOSpeed, etc.).
+            </p>
+            <p><strong>Status:</strong> Fundamentally impossible from C. These functions can only be kept as inline assembly.</p>
+        </div>
+
+        <div class="blocker-card">
+            <h3>D. Shared Literal Pools <span class="tag-blocker">~10 functions</span></h3>
+            <p>
+                Adjacent functions share literal pool entries. The last 2 bytes of function A's
+                literal pool happen to be the first instruction of function B (or vice versa).
+                Decompiling function A to C generates a full 4-byte pool entry, adding 2 bytes
+                that break function B's <code>ldr</code> displacement.
+            </p>
+            <div class="code-compare">
+                <div>
+                    <div class="label">Original (shared)</div>
+                    <pre><code>FreeGfxBuffer:
+  ...
+  bx r0
+  .short 0x0000      ; padding
+  .short 0x34A0      ; low 2 bytes of pool
+DeadCode:             ; starts mid-pool!
+  lsls r0, r0, #12   ; = 0x0300 = high bytes</code></pre>
+                </div>
+                <div>
+                    <div class="label">C compiled (broken)</div>
+                    <pre><code>FreeGfxBuffer:
+  ...
+  bx r0
+  .short 0x0000      ; padding
+  .word 0x030034A0   ; full 4-byte pool
+DeadCode:             ; now 2 bytes later!
+  lsls r0, r0, #12   ; shifted</code></pre>
+                </div>
+            </div>
+            <p>
+                <strong>Affected:</strong> FreeGfxBuffer, LoadBGTileData, StreamCmd_SetBlendMode,
+                StreamCmd_DmaSpriteData, several adjacent stream command pairs.
+            </p>
+            <p><strong>Status:</strong> Can only be solved by decompiling both functions simultaneously (not supported by INCLUDE_ASM macro).</p>
+        </div>
+
+        <div class="blocker-card">
+            <h3>E. Small Constant Pool Loads <span class="tag-blocker">~5 functions</span></h3>
+            <p>
+                Some functions load small constants (like 4) from the literal pool via
+                <code>ldr r0, =4</code> instead of using <code>movs r0, #4</code>.
+                This happens when the constant participates in a u16 truncation pattern.
+                agbcc always uses <code>movs</code> for constants 0-255, which is 4 bytes smaller
+                (no pool entry needed).
+            </p>
+            <p>
+                <strong>Affected:</strong> StopAllMusicPlayers, StopSoundEffects, m4aSoundInit_Impl.
+            </p>
+            <p><strong>Status:</strong> No known way to force a pool load for a small constant from C.</p>
+        </div>
+
+        <div class="blocker-card">
+            <h3>F. Register Allocation for Struct Member Stores <span class="tag-blocker">~100+ functions</span></h3>
+            <p>
+                When a function stores multiple values to struct members, the compiler's register allocator
+                may choose different registers than the original. This affects which register holds the
+                struct pointer, which holds intermediate values, and the order of operations.
+            </p>
+            <p>
+                The <code>register type var asm("rN")</code> constraint can sometimes fix this, but it
+                often causes cascading changes in other register assignments. The more constrained registers,
+                the more likely other parts of the code break.
+            </p>
+            <p>
+                <strong>Affected:</strong> InitLevelStateDefaults, TransitionReturnToWorldMap,
+                TransitionToSceneSelect, TransitionToTitleScreen, most functions with 3+ struct member stores.
+            </p>
+            <p><strong>Status:</strong> Case-by-case manual tuning. No systematic solution.</p>
+        </div>
+
+        <div class="blocker-card">
+            <h3>G. Loop Increment Byte Truncation Placement <span class="tag-blocker">~15 functions</span></h3>
+            <p>
+                When incrementing a <code>u8</code> loop counter, the original truncates at the
+                <em>increment</em> point (<code>adds r0, r6, #1; lsls r0, #24; lsrs r6, r0, #24</code>).
+                agbcc with <code>register u8 asm("r6")</code> either:
+                (a) increments in-place (<code>adds r6, #1</code>) without truncation, or
+                (b) truncates at the <em>comparison</em> point instead.
+            </p>
+            <p>
+                <strong>Affected:</strong> SaveGameRetry, entity spawn loops, any loop with <code>u8</code> counter.
+            </p>
+            <p><strong>Status:</strong> No known workaround. The compiler's truncation placement is not controllable.</p>
+        </div>
+
+        <div class="blocker-card">
+            <h3>H. Hand-Written Assembly Patterns <span class="tag-blocker">~15 functions</span></h3>
+            <p>
+                Some functions (especially in the m4a sound engine) use hand-written assembly patterns
+                that no C compiler would generate:
+            </p>
+            <ul>
+                <li><code>mov r12, lr; ... bx r12</code> &mdash; manual lr save to high register</li>
+                <li><code>stm r0!, {r3}</code> &mdash; store-multiple with writeback</li>
+                <li>Mid-function entry points (<code>.thumb_func FUN_XXXXXXXX</code> labels)</li>
+                <li>Fall-through between functions (no return, execution falls into next function)</li>
+            </ul>
+            <p>
+                <strong>Affected:</strong> InstrumentLookup, SoundEffectChain, MidiDecodeByte,
+                several m4a command handlers.
+            </p>
+            <p><strong>Status:</strong> These can only remain as inline assembly. They were never C to begin with.</p>
+        </div>
+
+        <!-- ===== Breakdown ===== -->
+        <h2>Function Breakdown</h2>
+        <p>Approximate categorization of all 463 functions:</p>
+        <table>
+            <thead>
+                <tr><th>Category</th><th>Count</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Matched to C</td><td>52</td><td class="tag-solved">Done</td></tr>
+                <tr><td>Blocked by <code>tst</code> vs <code>ands</code></td><td>~60</td><td class="tag-blocker">Needs compiler fix</td></tr>
+                <tr><td>Blocked by leaf prologue</td><td>~40</td><td class="tag-blocker">Needs per-function flags</td></tr>
+                <tr><td>Non-word-aligned</td><td>~20</td><td class="tag-blocker">Impossible from C</td></tr>
+                <tr><td>Hand-written asm</td><td>~15</td><td class="tag-blocker">Impossible from C</td></tr>
+                <tr><td>Shared literal pools</td><td>~10</td><td class="tag-blocker">Needs paired decompilation</td></tr>
+                <tr><td>Register allocation</td><td>~100+</td><td class="tag-partial">Case-by-case, some solvable</td></tr>
+                <tr><td>Large/complex functions</td><td>~166</td><td class="tag-partial">Need more investigation</td></tr>
+            </tbody>
+        </table>
+        <p>
+            The biggest unlock would be solving the <strong>tst vs ands</strong> issue (~60 functions)
+            or the <strong>leaf prologue</strong> issue (~40 functions). Both would likely require
+            modifications to the agbcc compiler itself.
+        </p>
+
+    </div>
+
+    <footer>
+        Klonoa: Empire of Dreams Decompilation Research Project
+    </footer>
+</body>
+</html>
