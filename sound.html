@@ -285,13 +285,13 @@
 
         <p>Matched m4a functions (byte-exact C reimplementations):</p>
         <ul>
-            <li><strong>MPlayStop</strong> &mdash; halt playback on a music player</li>
-            <li><strong>InitSceneState</strong> &mdash; initialize sound scene from song table</li>
+            <li><strong>MPlayStop</strong> (m4aMPlayStop) &mdash; halt playback on a music player</li>
+            <li><strong>m4aSongNumStart</strong> &mdash; initialize sound scene from song table</li>
             <li><strong>m4aSongNumStop</strong> &mdash; stop a song if currently playing</li>
             <li><strong>m4aMPlayCommand</strong> &mdash; stop player for a matching song</li>
             <li><strong>FreeSoundStruct</strong> &mdash; free sound info struct</li>
             <li><strong>SoundInit</strong> &mdash; top-level sound initialization wrapper</li>
-            <li><strong>DisableInterruptsForGfxSetup</strong> &mdash; sound shutdown during GFX init</li>
+            <li><strong>m4aSoundVSyncOff</strong> &mdash; disable sound VSync processing</li>
             <li><strong>StopSoundChannel</strong> &mdash; stop a single sound channel</li>
             <li><strong>PlaySoundWithContext_D8/DC</strong> &mdash; trigger sound effect playback</li>
             <li><strong>SoundCommand_6450</strong> &mdash; sound command dispatch</li>
@@ -300,7 +300,27 @@
             <li><strong>StreamCmd_StopSoundAndSync</strong> &mdash; stop sound, sync freq to BG scroll</li>
             <li><strong>StreamCmd_SetSoundFreqs</strong> &mdash; read two u16 frequencies from stream</li>
             <li><strong>FreeAllDecompBuffers</strong> &mdash; free 6 decomp buffers + stop 4 music channels</li>
+            <li><strong>SoundClear</strong> &mdash; reset all 12 channel status bytes + process channels</li>
         </ul>
+
+        <h2>pokeemerald Alignment</h2>
+        <p>
+            The m4a engine is shared across virtually all GBA games. The
+            <a href="https://github.com/pret/pokeemerald/blob/master/src/m4a.c">pret/pokeemerald</a>
+            project has the most complete decompilation with established naming conventions.
+            We align our function names with theirs for cross-project consistency:
+        </p>
+        <ul>
+            <li><a href="https://github.com/pret/pokeemerald/blob/master/include/gba/m4a_internal.h">m4a_internal.h</a> &mdash; struct definitions (SoundInfo, MusicPlayerInfo, MusicPlayerTrack, SongHeader, ToneData, WaveData)</li>
+            <li><a href="https://github.com/pret/pokeemerald/blob/master/src/m4a.c">m4a.c</a> &mdash; full C implementation (~70 functions)</li>
+            <li><a href="https://github.com/loveemu/vgmdocs/blob/master/Summary_of_GBA_Standard_Sound_Driver_MusicPlayer2000.md">loveemu MP2000 docs</a> &mdash; format reference</li>
+        </ul>
+        <p>
+            22 functions have been renamed to match pokeemerald (m4aSongNumStart, MPlayStart,
+            m4aMPlayAllStop, SoundClear, m4aSoundVSyncOff/On, m4aSoundMode, SampleFreqSet,
+            TrackStop, MidiKeyToFreq, CgbOscOff, ply_voice/vol/pan/bend/bendr/lfos/lfodl/mod/keysh).
+            Game-specific wrappers (StreamCmd_*, SoundEffect*) keep Klonoa-specific names.
+        </p>
     </div>
 
     <footer>
