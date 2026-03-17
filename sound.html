@@ -279,6 +279,21 @@
             <li><strong>agb2mid</strong> &mdash; m4a to MIDI converter</li>
             <li><strong>pokemid</strong> &mdash; MIDI conversion tool for Pokemon games (works with any m4a game)</li>
         </ul>
+        <h2>Decompilation Status</h2>
+
+        <p>Matched m4a functions (byte-exact C reimplementations):</p>
+        <ul>
+            <li><strong>MPlayStop</strong> &mdash; halt playback on a music player</li>
+            <li><strong>InitSceneState</strong> &mdash; initialize sound scene from song table</li>
+            <li><strong>m4aSongNumStop</strong> &mdash; stop a song if currently playing</li>
+            <li><strong>m4aMPlayCommand</strong> &mdash; stop player for a matching song</li>
+            <li><strong>FreeSoundStruct</strong> &mdash; free sound info struct</li>
+            <li><strong>SoundInit</strong> &mdash; top-level sound initialization wrapper</li>
+            <li><strong>DisableInterruptsForGfxSetup</strong> &mdash; sound shutdown during GFX init</li>
+            <li><strong>StopSoundChannel</strong> &mdash; stop a single sound channel</li>
+            <li><strong>PlaySoundWithContext_D8/DC</strong> &mdash; trigger sound effect playback</li>
+            <li><strong>SoundCommand_6450</strong> &mdash; sound command dispatch</li>
+        </ul>
     </div>
 
     <footer>

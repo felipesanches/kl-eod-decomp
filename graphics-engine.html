@@ -559,6 +559,14 @@
                 <tr><td class="mono">StreamCmd_StopMusicAndDisableIRQ</td><td>Matched</td><td>Stream command: stop music + disable IRQ</td></tr>
                 <tr><td class="mono">StreamCmd_DisableVBlank</td><td>Matched</td><td>Stream command: disable VBlank interrupt</td></tr>
                 <tr><td class="mono">UpdateFadeEffect</td><td>Matched</td><td>Applies brightness fade via REG_BLDY</td></tr>
+                <tr><td class="mono">TransitionToWorldMap</td><td>Matched</td><td>World map transition with callback state setup</td></tr>
+                <tr><td class="mono">GetEntityLookupData</td><td>Matched</td><td>Entity table lookup (shift-pair interleaving technique)</td></tr>
+                <tr><td class="mono">FixedMul8</td><td>Matched</td><td>8.8 fixed-point multiply (<code>register asm("r1")</code> for forced copy)</td></tr>
+                <tr><td class="mono">InitSceneState</td><td>Matched</td><td>Sound scene init via voice table lookup</td></tr>
+                <tr><td class="mono">m4aSongNumStop</td><td>Matched</td><td>Stop song if currently playing</td></tr>
+                <tr><td class="mono">m4aMPlayCommand</td><td>Matched</td><td>Stop player for matching song</td></tr>
+                <tr><td class="mono">SetupGfxCallbacks</td><td>Matched</td><td>World map VBlank/callback initialization</td></tr>
+                <tr><td class="mono">FadeOutController</td><td>Matched</td><td>Screen fade-out with scene transition switch</td></tr>
             </tbody>
         </table>
 
@@ -570,9 +578,7 @@
             </thead>
             <tbody>
                 <tr><td class="mono">LoadBGTileData</td><td>Register allocation: compiler uses <code>push {lr}</code> instead of <code>push {r4,r5,lr}</code></td></tr>
-                <tr><td class="mono">LoadAndDecompressStream</td><td>Instruction reorder: <code>ldr</code> before ALU vs after</td></tr>
-                <tr><td class="mono">FinalizeLevelLayerSetup</td><td>Same <code>ldr</code>-before-ALU instruction swap</td></tr>
-                <tr><td class="mono">ClearOamBufferExtended</td><td>Hand-written <code>bx lr</code> leaf (no stack frame)</td></tr>
+                <tr><td class="mono">LoadBGTilemapData</td><td>Register allocation around table lookup</td></tr>
                 <tr><td class="mono">FreeGfxBuffer</td><td>Hand-written <code>bx lr</code> leaf</td></tr>
                 <tr><td class="mono">AllocAndClearGfxBuffer</td><td>DMA3 with stack-allocated source: register allocation around <code>sp</code></td></tr>
                 <tr><td class="mono">AllocAndClearBuffer_52A4</td><td>Same DMA3 stack-source pattern</td></tr>
@@ -586,9 +592,9 @@
                 <tr><td class="mono">StreamCmd_DisableVBlankAndStopMusic</td><td>Non-word-aligned function start</td></tr>
                 <tr><td class="mono">InitGfxStreamState</td><td>DMA3 with stack-allocated source</td></tr>
                 <tr><td class="mono">ResetGfxStreamEntries</td><td>Loop structure / pointer arithmetic mismatch</td></tr>
-                <tr><td class="mono">Abs, StrCmp, StrCpy, FixedMul8</td><td>Hand-written <code>bx lr</code> utility leaves (system module)</td></tr>
+                <tr><td class="mono">Abs, StrCmp, StrCpy</td><td>Hand-written <code>bx lr</code> utility leaves (system module)</td></tr>
                 <tr><td class="mono">HBlankScrollUpdate, AcknowledgeInterrupt</td><td>Non-word-aligned <code>bx lr</code> engine leaves</td></tr>
-                <tr><td class="mono">FinalizeLevelLayerSetup, LoadAndDecompressStream</td><td><code>ldr</code>-before-ALU in table-indexed lookups</td></tr>
+                <tr><td class="mono">SetPaletteAnimEntry</td><td>Register allocation: compiler swaps r0/r1 for parameter copy</td></tr>
             </tbody>
         </table>
 
