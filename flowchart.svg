@@ -56,7 +56,7 @@
     <rect x="350" y="164" width="500" height="80" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1"/>
     <text x="600" y="184" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">Hardware Initialization</text>
     <text x="600" y="200" text-anchor="middle" fill="#94a3b8" font-size="11">DMA clear IWRAM / VRAM / OAM / Palettes</text>
-    <text x="600" y="214" text-anchor="middle" fill="#94a3b8" font-size="11">m4aSoundInit_Impl &bull; REG_KEYINPUT &bull; Timer setup</text>
+    <text x="600" y="214" text-anchor="middle" fill="#94a3b8" font-size="11">m4aSoundInit_Impl &#x2022; REG_KEYINPUT &#x2022; Timer setup</text>
     <text x="600" y="228" text-anchor="middle" fill="#94a3b8" font-size="11">Alloc gControlBlock, gOamSourceTable, gDecompBufferCtrl</text>
   </g>
 
@@ -65,8 +65,8 @@
   <g filter="url(#shadow)">
     <rect x="380" y="264" width="440" height="60" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1"/>
     <text x="600" y="284" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">Setup Callback State (0x03003510)</text>
-    <text x="600" y="300" text-anchor="middle" fill="#94a3b8" font-size="11">+0x28: ReadKeyInput &bull; +0x2C: FadeOutController</text>
-    <text x="600" y="314" text-anchor="middle" fill="#94a3b8" font-size="11">+0x30: VBlankCallback &bull; +0x78: scene count = 4</text>
+    <text x="600" y="300" text-anchor="middle" fill="#94a3b8" font-size="11">+0x28: ReadKeyInput &#x2022; +0x2C: FadeOutController</text>
+    <text x="600" y="314" text-anchor="middle" fill="#94a3b8" font-size="11">+0x30: VBlankCallback &#x2022; +0x78: scene count = 4</text>
   </g>
 
   <!-- ===== MAIN LOOP ===== -->
@@ -87,8 +87,8 @@
   <g filter="url(#shadow)">
     <rect x="370" y="449" width="460" height="56" rx="6" fill="#3b1324" stroke="#ec4899" stroke-width="1"/>
     <text x="600" y="469" text-anchor="middle" fill="#f9a8d4" font-size="12" font-weight="600">VBlank Callback Executes</text>
-    <text x="600" y="485" text-anchor="middle" fill="#94a3b8" font-size="10">OAM DMA &bull; BG scroll registers &bull; Palette DMA &bull; Level-specific tile DMA</text>
-    <text x="600" y="497" text-anchor="middle" fill="#64748b" font-size="9">VBlankDMA_Level1..27 &bull; VBlankCallback_Gameplay / MapScreen / Dialog / Cutscene</text>
+    <text x="600" y="485" text-anchor="middle" fill="#94a3b8" font-size="10">OAM DMA &#x2022; BG scroll registers &#x2022; Palette DMA &#x2022; Level-specific tile DMA</text>
+    <text x="600" y="497" text-anchor="middle" fill="#64748b" font-size="9">VBlankDMA_Level1..27 &#x2022; VBlankCallback_Gameplay / MapScreen / Dialog / Cutscene</text>
   </g>
 
   <!-- Step 3: ReadKeyInput -->
@@ -96,7 +96,7 @@
   <g filter="url(#shadow)">
     <rect x="420" y="523" width="360" height="44" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1"/>
     <text x="600" y="541" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">ReadKeyInput</text>
-    <text x="600" y="557" text-anchor="middle" fill="#94a3b8" font-size="10">XOR REG_KEYINPUT &bull; edge detection &bull; A+B+Start+Select reset check</text>
+    <text x="600" y="557" text-anchor="middle" fill="#94a3b8" font-size="10">XOR REG_KEYINPUT &#x2022; edge detection &#x2022; A+B+Start+Select reset check</text>
   </g>
 
   <!-- Step 4: ProcessInputAndTimers -->
@@ -104,8 +104,8 @@
   <g filter="url(#shadow)">
     <rect x="380" y="585" width="440" height="50" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1"/>
     <text x="600" y="605" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">ProcessInputAndTimers</text>
-    <text x="600" y="620" text-anchor="middle" fill="#94a3b8" font-size="10">Decrement scene timer &bull; Dispatch via ROM_STATE_TABLE (0x080D9150)</text>
-    <text x="600" y="630" text-anchor="middle" fill="#64748b" font-size="9">Advance vision counter when timer expires &bull; Directional input acceleration</text>
+    <text x="600" y="620" text-anchor="middle" fill="#94a3b8" font-size="10">Decrement scene timer &#x2022; Dispatch via ROM_STATE_TABLE (0x080D9150)</text>
+    <text x="600" y="630" text-anchor="middle" fill="#64748b" font-size="9">Advance vision counter when timer expires &#x2022; Directional input acceleration</text>
   </g>
 
   <!-- Step 5: Scene update -->
@@ -133,7 +133,7 @@
     <rect x="310" y="740" width="140" height="60" rx="6" fill="#14532d" stroke="#22c55e" stroke-width="1"/>
     <text x="380" y="760" text-anchor="middle" fill="#86efac" font-size="11" font-weight="600">World Map</text>
     <text x="380" y="776" text-anchor="middle" fill="#94a3b8" font-size="9">UpdateWorldMapScene</text>
-    <text x="380" y="790" text-anchor="middle" fill="#64748b" font-size="9">Node anim &bull; cursor</text>
+    <text x="380" y="790" text-anchor="middle" fill="#64748b" font-size="9">Node anim &#x2022; cursor</text>
   </g>
 
   <!-- Gameplay (center) -->
@@ -142,8 +142,8 @@
     <rect x="510" y="765" width="180" height="70" rx="6" fill="#14532d" stroke="#22c55e" stroke-width="1.5"/>
     <text x="600" y="785" text-anchor="middle" fill="#86efac" font-size="12" font-weight="700">Gameplay</text>
     <text x="600" y="800" text-anchor="middle" fill="#94a3b8" font-size="9">MainGameFrameLoop</text>
-    <text x="600" y="812" text-anchor="middle" fill="#94a3b8" font-size="9">Entity update &bull; physics</text>
-    <text x="600" y="824" text-anchor="middle" fill="#64748b" font-size="9">collisions &bull; animations</text>
+    <text x="600" y="812" text-anchor="middle" fill="#94a3b8" font-size="9">Entity update &#x2022; physics</text>
+    <text x="600" y="824" text-anchor="middle" fill="#64748b" font-size="9">collisions &#x2022; animations</text>
   </g>
 
   <!-- Pause Menu (right) -->
@@ -162,7 +162,7 @@
     <text x="990" y="740" text-anchor="middle" fill="#86efac" font-size="11" font-weight="600">Other Scenes</text>
     <text x="990" y="755" text-anchor="middle" fill="#94a3b8" font-size="9">Scene Select</text>
     <text x="990" y="767" text-anchor="middle" fill="#94a3b8" font-size="9">Save Screen</text>
-    <text x="990" y="779" text-anchor="middle" fill="#94a3b8" font-size="9">Cutscenes &bull; Credits</text>
+    <text x="990" y="779" text-anchor="middle" fill="#94a3b8" font-size="9">Cutscenes &#x2022; Credits</text>
   </g>
 
   <!-- Converge back -->
@@ -194,7 +194,7 @@
   <g filter="url(#shadow)">
     <rect x="400" y="1010" width="400" height="44" rx="6" fill="#451a03" stroke="#f59e0b" stroke-width="1.5"/>
     <text x="600" y="1028" text-anchor="middle" fill="#fde68a" font-size="12" font-weight="700">FadeOutController</text>
-    <text x="600" y="1044" text-anchor="middle" fill="#94a3b8" font-size="10">Set gPauseFlag = 1 &bull; REG_BLDCNT = 0xFF &bull; 16-frame fade</text>
+    <text x="600" y="1044" text-anchor="middle" fill="#94a3b8" font-size="10">Set gPauseFlag = 1 &#x2022; REG_BLDCNT = 0xFF &#x2022; 16-frame fade</text>
   </g>
 
   <line x1="600" y1="1054" x2="600" y2="1074" stroke="#f59e0b" marker-end="url(#arrow)"/>
@@ -218,7 +218,7 @@
   <!-- Free resources -->
   <g filter="url(#shadow)">
     <rect x="420" y="1160" width="360" height="36" rx="6" fill="#451a03" stroke="#f59e0b" stroke-width="1"/>
-    <text x="600" y="1183" text-anchor="middle" fill="#fde68a" font-size="12" font-weight="600">FreeAllDecompBuffers &bull; InitOamEntries</text>
+    <text x="600" y="1183" text-anchor="middle" fill="#fde68a" font-size="12" font-weight="600">FreeAllDecompBuffers &#x2022; InitOamEntries</text>
   </g>
 
   <line x1="600" y1="1196" x2="600" y2="1216" stroke="#f59e0b" marker-end="url(#arrow)"/>
@@ -227,8 +227,8 @@
   <g filter="url(#shadow)">
     <rect x="370" y="1216" width="460" height="56" rx="6" fill="#451a03" stroke="#f59e0b" stroke-width="1"/>
     <text x="600" y="1236" text-anchor="middle" fill="#fde68a" font-size="12" font-weight="600">Install New Scene Callbacks</text>
-    <text x="600" y="1252" text-anchor="middle" fill="#94a3b8" font-size="10">+0x28: ReadKeyInput &bull; +0x2C: SceneUpdate &bull; +0x30: Transition &bull; +0x34: VBlank</text>
-    <text x="600" y="1264" text-anchor="middle" fill="#64748b" font-size="9">gControlBlock[0] = -1 &bull; gPauseFlag = 0 &bull; Scene counter updated</text>
+    <text x="600" y="1252" text-anchor="middle" fill="#94a3b8" font-size="10">+0x28: ReadKeyInput &#x2022; +0x2C: SceneUpdate &#x2022; +0x30: Transition &#x2022; +0x34: VBlank</text>
+    <text x="600" y="1264" text-anchor="middle" fill="#64748b" font-size="9">gControlBlock[0] = -1 &#x2022; gPauseFlag = 0 &#x2022; Scene counter updated</text>
   </g>
 
   <!-- ===== TRANSITION DESTINATIONS ===== -->
@@ -247,7 +247,7 @@
     <rect x="150" y="1430" width="210" height="60" rx="6" fill="#451a03" stroke="#f59e0b" stroke-width="1"/>
     <text x="255" y="1450" text-anchor="middle" fill="#fde68a" font-size="11" font-weight="600">TransitionToWorldMap</text>
     <text x="255" y="1464" text-anchor="middle" fill="#22c55e" font-size="9" font-weight="700">MATCHED</text>
-    <text x="255" y="1478" text-anchor="middle" fill="#94a3b8" font-size="9">SetupGfxCallbacks &bull; Fade in</text>
+    <text x="255" y="1478" text-anchor="middle" fill="#94a3b8" font-size="9">SetupGfxCallbacks &#x2022; Fade in</text>
   </g>
 
   <!-- TransitionGameplayInit -->
@@ -255,7 +255,7 @@
   <g filter="url(#shadow)">
     <rect x="380" y="1430" width="200" height="60" rx="6" fill="#451a03" stroke="#f59e0b" stroke-width="1"/>
     <text x="480" y="1450" text-anchor="middle" fill="#fde68a" font-size="11" font-weight="600">TransitionGameplayInit</text>
-    <text x="480" y="1464" text-anchor="middle" fill="#94a3b8" font-size="9">InitLevelBG &bull; Load level</text>
+    <text x="480" y="1464" text-anchor="middle" fill="#94a3b8" font-size="9">InitLevelBG &#x2022; Load level</text>
     <text x="480" y="1478" text-anchor="middle" fill="#94a3b8" font-size="9">ResetVideoRegisters</text>
   </g>
 
@@ -264,7 +264,7 @@
   <g filter="url(#shadow)">
     <rect x="620" y="1430" width="200" height="60" rx="6" fill="#451a03" stroke="#f59e0b" stroke-width="1"/>
     <text x="720" y="1450" text-anchor="middle" fill="#fde68a" font-size="11" font-weight="600">TransitionGameOver</text>
-    <text x="720" y="1464" text-anchor="middle" fill="#94a3b8" font-size="9">Death &rarr; world map or</text>
+    <text x="720" y="1464" text-anchor="middle" fill="#94a3b8" font-size="9">Death &#x2192; world map or</text>
     <text x="720" y="1478" text-anchor="middle" fill="#94a3b8" font-size="9">restart level</text>
   </g>
 
@@ -275,8 +275,8 @@
     <rect x="860" y="1430" width="200" height="80" rx="6" fill="#451a03" stroke="#f59e0b" stroke-width="1"/>
     <text x="960" y="1450" text-anchor="middle" fill="#fde68a" font-size="11" font-weight="600">Other Transitions</text>
     <text x="960" y="1466" text-anchor="middle" fill="#94a3b8" font-size="9">ToTitleScreen</text>
-    <text x="960" y="1478" text-anchor="middle" fill="#94a3b8" font-size="9">ToSceneSelect &bull; ToSaveScreen</text>
-    <text x="960" y="1490" text-anchor="middle" fill="#94a3b8" font-size="9">SoftReset &bull; FadeOutWithMusic</text>
+    <text x="960" y="1478" text-anchor="middle" fill="#94a3b8" font-size="9">ToSceneSelect &#x2022; ToSaveScreen</text>
+    <text x="960" y="1490" text-anchor="middle" fill="#94a3b8" font-size="9">SoftReset &#x2022; FadeOutWithMusic</text>
     <text x="960" y="1502" text-anchor="middle" fill="#94a3b8" font-size="9">ReturnToWorldMap</text>
   </g>
 
@@ -354,5 +354,5 @@
   <text x="340" y="2050" fill="#cbd5e1" font-size="11">ROM_STATE_DISPATCH_TABLE — input state machine (100 bytes/vision)</text>
 
   <!-- Footer -->
-  <text x="600" y="2100" text-anchor="middle" fill="#475569" font-size="11">Klonoa: Empire of Dreams — Decompilation Research &bull; felipesanches.github.io/kl-eod-decomp</text>
+  <text x="600" y="2100" text-anchor="middle" fill="#475569" font-size="11">Klonoa: Empire of Dreams — Decompilation Research &#x2022; felipesanches.github.io/kl-eod-decomp</text>
 </svg>
