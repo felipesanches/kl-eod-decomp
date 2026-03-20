@@ -59,21 +59,12 @@ INCLUDE_ASM("asm/nonmatchings/code_3", SpawnEntitiesForVision);
  * Indexes into the entity data table at 0x081168E8 with stride 8,
  * copies bytes at offsets +5 and +6 to the entity state block.
  */
-void GetEntityLookupData(u32 idx) {
-    u32 shifted = idx << 24;
-    u32 a0 = 0x03005400;
-    u32 a1 = 0x081168E8;
-    u8 *state;
-    u8 *table;
-    u8 *entry;
-    asm("" : "+r"(shifted));
-    asm("" : "=r"(state) : "0"(a0));
-    asm("" : "=r"(table) : "0"(a1));
-    shifted >>= 21;
-    shifted += (u32)table;
-    entry = (u8 *)shifted;
-    state[0x11] = entry[5];
-    state[0x12] = entry[6];
+void GetEntityLookupData(u8 idx) {
+    u8 *flags = gGameFlagsPtr;
+    const u8 *table = gEntityDataTable;
+    const u8 *entry = &table[(u32)idx * 8];
+    flags[0x11] = entry[5];
+    flags[0x12] = entry[6];
 }
 INCLUDE_ASM("asm/nonmatchings/code_3", ComputeScrollLimits);
 INCLUDE_ASM("asm/nonmatchings/code_3", ApplyPlayerMovement);
@@ -200,10 +191,7 @@ INCLUDE_ASM("asm/nonmatchings/code_3", SavePlayerProgress);
  * IsSelectButtonPressed: returns 1 if Select (bit 6) is held, 0 otherwise.
  */
 u32 IsSelectButtonPressed(void) {
-    u32 addr = 0x030051E4;
-    u16 *keys;
-    asm("" : "=r"(keys) : "0"(addr));
-    if (*keys & 0x40)
+    if (gKeysPrevious & 0x40)
         return 1;
     return 0;
 }

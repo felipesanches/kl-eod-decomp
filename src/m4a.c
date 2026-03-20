@@ -29,12 +29,11 @@ INCLUDE_ASM("asm/nonmatchings/m4a", SoundMain);
  *   calls: thunk_FUN_080001e0 (memory alloc)
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", SoundDmaInit);
-/*
- * Frees the sound info struct and its inner sample buffer.
+/**
+ * FreeSoundStruct: frees the sound info struct and its inner sample buffer.
+ *
  * Reads gSoundInfo, frees the inner buffer (at offset -4),
  * then frees the struct itself.
- *   no parameters
- *   no return value
  */
 void FreeSoundStruct(void) {
     u32 *p = (u32 *)0x0300081C; /* &gSoundInfo */
@@ -97,26 +96,21 @@ INCLUDE_ASM("asm/nonmatchings/m4a", SoundContextInit);
  */
 void FUN_08051868(u32);
 void StreamCmd_StopSoundAndSync(void) {
-    u32 a0 = 0x0300081C;
-    u32 *infoRef;
-    asm("" : "=r"(infoRef) : "0"(a0));
+    u32 *soundInfoRef = (u32 *)0x0300081C;
+    u16 *bgLayerState;
+    u16 *soundInfo;
 
-    FUN_08051868(((u32 *)*infoRef)[0x24 / 4]);
+    FUN_08051868(((u32 *)*soundInfoRef)[0x24 / 4]);
 
-    ((u8 *)*infoRef)[0x09] = 0;
-    ((u8 *)*infoRef)[0x08] = 0;
+    ((u8 *)*soundInfoRef)[0x09] = 0;
+    ((u8 *)*soundInfoRef)[0x08] = 0;
 
-    {
-        u32 a1 = 0x03003430;
-        u16 *bgState;
-        u16 *info;
-        asm("" : "=r"(bgState) : "0"(a1));
-        info = (u16 *)*infoRef;
-        bgState[0x24 / 2] = info[0x10 / 2];
-        bgState[0x26 / 2] = info[0x12 / 2];
-        ((u32 *)info)[0x1C / 4] = ((u32 *)info)[0x20 / 4];
-        info[0x1A / 2] = info[0x18 / 2];
-    }
+    bgLayerState = (u16 *)0x03003430;
+    soundInfo = (u16 *)*soundInfoRef;
+    bgLayerState[0x24 / 2] = soundInfo[0x10 / 2];
+    bgLayerState[0x26 / 2] = soundInfo[0x12 / 2];
+    ((u32 *)soundInfo)[0x1C / 4] = ((u32 *)soundInfo)[0x20 / 4];
+    soundInfo[0x1A / 2] = soundInfo[0x18 / 2];
 
     gStreamPtr += 2;
 }
@@ -140,22 +134,17 @@ INCLUDE_ASM("asm/nonmatchings/m4a", StreamCmd_SetChannelMode);
  */
 u32 ReadUnalignedU16(u8 *);
 void StreamCmd_SetSoundFreqs(void) {
-    u32 a0 = 0x03004D84;
-    u8 **streamRef;
-    u16 val;
-    asm("" : "=r"(streamRef) : "0"(a0));
+    u8 **streamRef = (u8 **)0x03004D84;
+    u16 **soundInfoRef;
+    u16 freqVal;
 
-    val = ReadUnalignedU16(*streamRef + 2);
+    freqVal = ReadUnalignedU16(*streamRef + 2);
 
-    {
-        u32 a1 = 0x0300081C;
-        u16 **infoRef;
-        asm("" : "=r"(infoRef) : "0"(a1));
-        (*infoRef)[0x10 / 2] = val;
+    soundInfoRef = (u16 **)0x0300081C;
+    (*soundInfoRef)[0x10 / 2] = freqVal;
 
-        val = ReadUnalignedU16(*streamRef + 4);
-        (*infoRef)[0x12 / 2] = val;
-    }
+    freqVal = ReadUnalignedU16(*streamRef + 4);
+    (*soundInfoRef)[0x12 / 2] = freqVal;
 
     *streamRef += 6;
 }
@@ -175,10 +164,7 @@ INCLUDE_ASM("asm/nonmatchings/m4a", MidiProcessEvent);
  */
 u32 MidiProcessEvent(void);
 u32 MPlayMain_SetAndProcess(u32 val) {
-    u32 a0 = 0x0300081C;
-    u8 *info;
-    asm("" : "=r"(info) : "0"(a0));
-    info = (u8 *)*(u32 *)info;
+    u8 *info = (u8 *)gSoundInfo;
     info[0x0D] = val;
     return MidiProcessEvent();
 }
@@ -328,35 +314,21 @@ INCLUDE_ASM("asm/nonmatchings/m4a", m4aSoundInit);
 void SoundInit(void) {
     InitSoundEngine();
 }
-/*
- * m4aSongNumStart: start playing a music track by song ID.
- * Looks up the song header from ROM_MUSIC_TABLE (0x08118AB4) and
- * ROM_MUSIC_META_TABLE (0x08118AE4), then begins playback.
- *   r0: song ID (0-38 for BGM, 39+ for SFX)
- *   21 lines, calls MPlayStart
+/**
+ * m4aSongNumStart: start playing a music track by song index.
+ *
+ * Looks up the song from gSongTable, finds the assigned music player
+ * from gMPlayTable, then calls MPlayStart to begin playback.
  */
 void MPlayStart(u32, u32);
-void m4aSongNumStart(u32 idx) {
-    u32 shifted = idx << 16;
-    u32 a0 = 0x08118AB4;
-    u32 a1 = 0x08118AE4;
-    register u8 *voiceBase asm("r2");
-    u8 *songTable;
-    u8 *entry;
-
-    asm("" : "+r"(shifted));
-    asm("" : "=r"(voiceBase) : "0"(a0));
-    asm("" : "=r"(songTable) : "0"(a1));
-    shifted >>= 13;
-    shifted += (u32)songTable;
-    entry = (u8 *)shifted;
-
-    {
-        u16 voiceIdx = *(u16 *)(entry + 4);
-        u32 voiceOff = (u32)voiceIdx * 12;
-        voiceOff += (u32)voiceBase;
-        MPlayStart(*(u32 *)voiceOff, *(u32 *)entry);
-    }
+void m4aSongNumStart(u16 idx) {
+    register const struct MusicPlayer *mplayTable asm("r2") = gMPlayTable;
+    const struct Song *songTable = gSongTable;
+    const struct Song *song = &songTable[idx];
+    u16 playerIdx = song->ms;
+    u32 playerOff = (u32)playerIdx * 12;
+    playerOff += (u32)mplayTable;
+    MPlayStart(*(u32 *)playerOff, song->header);
 }
 /*
  * m4aSongNumContinue: continue or queue a music track.
@@ -373,70 +345,42 @@ INCLUDE_ASM("asm/nonmatchings/m4a", m4aSongNumContinue);
  *   calls: MPlayChannelReset, MPlayStart
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", m4aSongNumLoad);
-/*
- * m4aMPlayCommand: execute a music player command.
- * Processes high-level commands like fade, tempo change, etc.
- *   r0: command ID
- *   26 lines, refs: ROM_MUSIC_TABLE, ROM_MUSIC_META_TABLE
- */
 /**
  * m4aMPlayCommand: stops the player if it's playing the given song.
+ *
+ * Looks up the song and its assigned player; if the player is currently
+ * playing this song's header, calls MPlayStop to halt playback.
  */
-void m4aMPlayCommand(u32 idx) {
-    u32 shifted = idx << 16;
-    u32 a0 = 0x08118AB4;
-    u32 a1 = 0x08118AE4;
-    register u8 *voiceBase asm("r2");
-    u8 *songTable;
-    u8 *entry;
-
-    asm("" : "+r"(shifted));
-    asm("" : "=r"(voiceBase) : "0"(a0));
-    asm("" : "=r"(songTable) : "0"(a1));
-    shifted >>= 13;
-    shifted += (u32)songTable;
-    entry = (u8 *)shifted;
-
-    {
-        u16 voiceIdx = *(u16 *)(entry + 4);
-        u32 voiceOff = (u32)voiceIdx * 12;
-        u32 *player;
-        voiceOff += (u32)voiceBase;
-        player = *(u32 **)voiceOff;
-        if (player[0] == *(u32 *)entry)
-            MPlayStop(player);
-    }
+void m4aMPlayCommand(u16 idx) {
+    register const struct MusicPlayer *mplayTable asm("r2") = gMPlayTable;
+    const struct Song *songTable = gSongTable;
+    const struct Song *song = &songTable[idx];
+    u16 playerIdx = song->ms;
+    u32 playerOff = (u32)playerIdx * 12;
+    u32 *player;
+    playerOff += (u32)mplayTable;
+    player = *(u32 **)playerOff;
+    if (player[0] == song->header)
+        MPlayStop(player);
 }
-/*
- * m4aSongNumStop: stop the currently playing music track.
- * Halts playback and releases all voices for the active song.
- *   26 lines, calls MPlayChannelReset
+/**
+ * m4aSongNumStop: stops the given song if it's currently playing.
+ *
+ * Looks up the song and its player; if the player's current header
+ * matches, calls MPlayChannelReset to stop and release channels.
  */
 void MPlayChannelReset(u32 *);
-void m4aSongNumStop(u32 idx) {
-    u32 shifted = idx << 16;
-    u32 a0 = 0x08118AB4;
-    u32 a1 = 0x08118AE4;
-    register u8 *voiceBase asm("r2");
-    u8 *songTable;
-    u8 *entry;
-
-    asm("" : "+r"(shifted));
-    asm("" : "=r"(voiceBase) : "0"(a0));
-    asm("" : "=r"(songTable) : "0"(a1));
-    shifted >>= 13;
-    shifted += (u32)songTable;
-    entry = (u8 *)shifted;
-
-    {
-        u16 voiceIdx = *(u16 *)(entry + 4);
-        u32 voiceOff = (u32)voiceIdx * 12;
-        u32 *player;
-        voiceOff += (u32)voiceBase;
-        player = *(u32 **)voiceOff;
-        if (player[0] == *(u32 *)entry)
-            MPlayChannelReset(player);
-    }
+void m4aSongNumStop(u16 idx) {
+    register const struct MusicPlayer *mplayTable asm("r2") = gMPlayTable;
+    const struct Song *songTable = gSongTable;
+    const struct Song *song = &songTable[idx];
+    u16 playerIdx = song->ms;
+    u32 playerOff = (u32)playerIdx * 12;
+    u32 *player;
+    playerOff += (u32)mplayTable;
+    player = *(u32 **)playerOff;
+    if (player[0] == song->header)
+        MPlayChannelReset(player);
 }
 /*
  * m4aSoundVSync: VBlank sound update — called every frame.
@@ -450,14 +394,9 @@ void m4aSongNumStop(u32 idx) {
  * Iterates ROM_MUSIC_TABLE (0x08118AB4), calling MPlayStop on each.
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", m4aMPlayAllStop);
-/*
- * Wrapper that calls MPlayChannelReset to stop/reset
- * a single sound channel.
- *   r0: pointer to sound channel struct
- *   no return value
- */
-void StopSoundChannel(u32 r0) {
-    MPlayChannelReset(r0);
+/** StopSoundChannel: wrapper that calls MPlayChannelReset to stop a channel. */
+void StopSoundChannel(u32 channel) {
+    MPlayChannelReset(channel);
 }
 
 /* ── Interrupt & VBlank Handlers ── */
@@ -506,8 +445,8 @@ INCLUDE_ASM("asm/nonmatchings/m4a", SoundHardwareInit_Tail);
  *   r0: sound effect ID
  *   no return value
  */
-void PlaySoundWithContext_D8(u32 r0) {
-    FUN_0805186c(r0, gMPlayInfo_BGM);
+void PlaySoundWithContext_D8(u32 soundId) {
+    FUN_0805186c(soundId, gMPlayInfo_BGM);
 }
 /*
  * Plays a sound effect using the SE MusicPlayer context (gMPlayInfo_SE).
@@ -515,8 +454,8 @@ void PlaySoundWithContext_D8(u32 r0) {
  *   r0: sound effect ID
  *   no return value
  */
-void PlaySoundWithContext_DC(u32 r0) {
-    FUN_0805186c(r0, gMPlayInfo_SE);
+void PlaySoundWithContext_DC(u32 soundId) {
+    FUN_0805186c(soundId, gMPlayInfo_SE);
 }
 
 /* ── Direct Sound & DMA Configuration ── */
@@ -560,47 +499,40 @@ INCLUDE_ASM("asm/nonmatchings/m4a", m4aSoundMode);
  * Restores SAPPY_MAGIC on exit.
  */
 void SoundClear(void) {
-    u32 a0 = 0x03007FF0;
-    u32 **infoRef;
-    u32 *info;
+    u32 **soundInfoRef = (u32 **)0x03007FF0;
+    u32 *soundInfo;
     u32 magic;
-    s32 counter;
-    u8 *ptr;
+    s32 channelIdx;
+    u8 *channelPtr;
 
-    asm("" : "=r"(infoRef) : "0"(a0));
-    info = *infoRef;
-    magic = info[0];
+    soundInfo = *soundInfoRef;
+    magic = soundInfo[0];
 
-    {
-        u32 a1 = SAPPY_MAGIC;
-        u32 expected;
-        asm("" : "=r"(expected) : "0"(a1));
-        if (magic != expected)
-            return;
-    }
+    if (magic != SAPPY_MAGIC)
+        return;
 
-    info[0] = magic + 1;
+    soundInfo[0] = magic + 1;
 
-    counter = 12;
-    ptr = (u8 *)info + 0x50;
+    channelIdx = 12;
+    channelPtr = (u8 *)soundInfo + 0x50;
     do {
-        *ptr = 0;
-        counter--;
-        ptr += 0x40;
-    } while (counter > 0);
+        *channelPtr = 0;
+        channelIdx--;
+        channelPtr += 0x40;
+    } while (channelIdx > 0);
 
-    ptr = (u8 *)info[0x1C / 4];
-    if (ptr != NULL) {
-        counter = 1;
+    channelPtr = (u8 *)soundInfo[0x1C / 4];
+    if (channelPtr != NULL) {
+        channelIdx = 1;
         do {
-            FUN_0805186c((u8)counter, info[0x2C / 4]);
-            *ptr = 0;
-            counter++;
-            ptr += 0x40;
-        } while (counter <= 4);
+            FUN_0805186c((u8)channelIdx, soundInfo[0x2C / 4]);
+            *channelPtr = 0;
+            channelIdx++;
+            channelPtr += 0x40;
+        } while (channelIdx <= 4);
     }
 
-    info[0] = SAPPY_MAGIC;
+    soundInfo[0] = SAPPY_MAGIC;
 }
 /*
  * m4aSoundShutdown: emergency stop — shut down all sound output.
@@ -620,25 +552,20 @@ void m4aSoundVSyncOff(void) {
     u32 scratch;
     u32 *info = *(u32 **)0x03007FF0;
     u32 magic = info[0];
+    vu32 *dmaReg;
 
     if (magic + 0x978C92AD > 1)
         return;
 
     info[0] = magic + 10;
 
-    {
-        vu32 *dma1 = (vu32 *)0x040000C4;
-        if (*dma1 & 0x02000000) {
-            *dma1 = 0x84400004;
-        }
-    }
+    dmaReg = (vu32 *)0x040000C4;
+    if (*dmaReg & 0x02000000)
+        *dmaReg = 0x84400004;
 
-    {
-        vu32 *dma2 = (vu32 *)0x040000D0;
-        if (*dma2 & 0x02000000) {
-            *dma2 = 0x84400004;
-        }
-    }
+    dmaReg = (vu32 *)0x040000D0;
+    if (*dmaReg & 0x02000000)
+        *dmaReg = 0x84400004;
 
     *(vu16 *)0x040000C6 = 0x0400;
     *(vu16 *)0x040000D2 = 0x0400;
@@ -685,6 +612,8 @@ INCLUDE_ASM("asm/nonmatchings/m4a", MPlayStart);
  */
 void MPlayStop(u32 *player) {
     u32 magic = player[0x34 / 4];
+    s32 numTracks;
+    u8 *track;
 
     if (magic != 0x68736D53)
         return;
@@ -692,15 +621,13 @@ void MPlayStop(u32 *player) {
     player[0x34 / 4] = magic + 1;
     player[0x04 / 4] |= 0x80000000;
 
-    {
-        s32 numTracks = (s32)(u8)((u8 *)player)[0x08];
-        u8 *track = (u8 *)player[0x2C / 4];
+    numTracks = (s32)(u8)((u8 *)player)[0x08];
+    track = (u8 *)player[0x2C / 4];
 
-        while (numTracks > 0) {
-            SoundContextRef((u32)player, (u32)track);
-            numTracks--;
-            track += 0x50;
-        }
+    while (numTracks > 0) {
+        SoundContextRef((u32)player, (u32)track);
+        numTracks--;
+        track += 0x50;
     }
 
     player[0x34 / 4] = 0x68736D53;
@@ -826,24 +753,14 @@ INCLUDE_ASM("asm/nonmatchings/m4a", MPlayCommandDispatch);
  */
 void FUN_08051870(u32, u32 *, u32);
 void SoundCmd_Dispatch(u32 ctx, u32 *channel) {
-    u8 *ptr = (u8 *)channel[0x40 / 4];
-    u8 cmd = *ptr;
-    channel[0x40 / 4] = (u32)(ptr + 1);
-    {
-        u32 a0 = 0x08117C8C;
-        u32 *table;
-        asm("" : "=r"(table) : "0"(a0));
-        FUN_08051870(ctx, channel, table[cmd]);
-    }
+    u8 *cmdPtr = (u8 *)channel[0x40 / 4];
+    u8 cmd = *cmdPtr;
+    channel[0x40 / 4] = (u32)(cmdPtr + 1);
+    FUN_08051870(ctx, channel, gSoundCmdTable[cmd]);
 }
-/*
- * Dispatches a sound command through FUN_08051870
- * using the global sound table pointer.
- *   r0, r1: command arguments passed through
- *   no return value
- */
-void SoundCommand_6450(u32 r0, u32 r1) {
-    FUN_08051870(r0, r1, gSoundTablePtr);
+/** SoundCommand_6450: dispatches a sound command using gSoundTablePtr. */
+void SoundCommand_6450(u32 ctx, u32 channel) {
+    FUN_08051870(ctx, channel, gSoundTablePtr);
 }
 /*
  * BitMaskLUT: 32-bit channel bitmask lookup table.

@@ -15,32 +15,22 @@ void UpdateSceneTransition(void);
  * and switching to scene transition when complete.
  */
 void FadeOutController(void) {
-    u32 a0 = 0x03004C20;
-    u32 *sceneCtrl;
-    asm("" : "=r"(sceneCtrl) : "0"(a0));
+    u32 *sceneCtrl = (u32 *)0x03004C20;
+    u32 fadeTimer;
+    u8 *fadeCounter;
 
     if (sceneCtrl[0] == 0)
         UpdateBGScrollRegisters();
 
-    {
-        u32 val = sceneCtrl[0];
-        u32 a1 = 0x03005498;
-        u8 *fadeCounter;
-        asm("" : "+r"(val));
-        asm("" : "=r"(fadeCounter) : "0"(a1));
+    fadeTimer = *(vu32 *)sceneCtrl;
+    fadeCounter = (u8 *)0x03005498;
 
-        if (val > 0x0F)
-            *fadeCounter = (val - 0x10) >> 1;
+    if (fadeTimer > 0x0F)
+        *fadeCounter = (fadeTimer - 0x10) >> 1;
 
-        if (*fadeCounter > 0x0F) {
-            sceneCtrl[0] = (u32)-1;
-            {
-                u32 a2 = 0x03003510;
-                u32 *cbState;
-                asm("" : "=r"(cbState) : "0"(a2));
-                cbState[1] = (u32)UpdateSceneTransition;
-            }
-        }
+    if (*fadeCounter > 0x0F) {
+        sceneCtrl[0] = (u32)-1;
+        gCallbackStateArray[1] = (u32)UpdateSceneTransition;
     }
 
     m4aSoundVSyncOff();
@@ -56,31 +46,25 @@ INCLUDE_ASM("asm/nonmatchings/gfx", UpdateMenuCursorInput);
 INCLUDE_ASM("asm/nonmatchings/gfx", SetupLevelTilemap);
 INCLUDE_ASM("asm/nonmatchings/gfx", UpdateWorldMapScene);
 
-/*
- * Reads an unsigned 16-bit value from a potentially unaligned address.
- * Assembles two bytes in little-endian order.
- *   ptr: pointer to the first of two consecutive bytes
- *   returns: the reconstructed u16 value
+/**
+ * ReadUnalignedU16: reads an unsigned 16-bit value from a potentially
+ * unaligned address. Assembles two bytes in little-endian order.
  */
 u32 ReadUnalignedU16(u8 *ptr) {
     return ptr[0] | (ptr[1] << 8);
 }
 
-/*
- * Reads a signed 16-bit value from a potentially unaligned address.
- * Assembles two bytes in little-endian order with sign extension.
- *   ptr: pointer to the first of two consecutive bytes
- *   returns: the reconstructed s16 value
+/**
+ * ReadUnalignedS16: reads a signed 16-bit value from a potentially
+ * unaligned address. Assembles two bytes in little-endian order with sign extension.
  */
 s16 ReadUnalignedS16(u8 *ptr) {
     return (s16)(ptr[0] + (ptr[1] << 8));
 }
 
-/*
- * Reads an unsigned 32-bit value from a potentially unaligned address.
- * Assembles four bytes in little-endian order.
- *   ptr: pointer to the first of four consecutive bytes
- *   returns: the reconstructed u32 value
+/**
+ * ReadUnalignedU32: reads an unsigned 32-bit value from a potentially
+ * unaligned address. Assembles four bytes in little-endian order.
  */
 u32 ReadUnalignedU32(u8 *ptr) {
     return ptr[0] + (ptr[1] << 8) + (ptr[2] << 16) + (ptr[3] << 24);
@@ -101,18 +85,17 @@ INCLUDE_ASM("asm/nonmatchings/gfx", UpdateAffineRegisters);
  */
 void DecompressAndDmaCopy(u32 src, u32 dest, u32 size) {
     u32 buf = AllocAndDecompress((u32 *)src);
+    vu32 *dma3;
     DecompressData(buf, src);
 
-    {
-        vu32 *dma3 = (vu32 *)0x040000D4;
-        dma3[0] = buf + 4; /* DMA3SAD: skip 4-byte sub-header */
-        dma3[1] = dest; /* DMA3DAD */
-        dma3[2] = (size >> 1) | 0x80000000; /* DMA3CNT: 16-bit, enable */
-        (void)dma3[2];
+    dma3 = (vu32 *)0x040000D4;
+    dma3[0] = buf + 4; /* DMA3SAD: skip 4-byte sub-header */
+    dma3[1] = dest; /* DMA3DAD */
+    dma3[2] = (size >> 1) | 0x80000000; /* DMA3CNT: 16-bit, enable */
+    (void)dma3[2];
 
-        while (dma3[2] & 0x80000000)
-            ;
-    }
+    while (dma3[2] & 0x80000000)
+        ;
 
     thunk_FUN_0800020c(buf);
 }
@@ -138,28 +121,17 @@ INCLUDE_ASM("asm/nonmatchings/gfx", SetupLevelLayerConfig);
  *   idx: level palette index (u8, shifted to u32 table offset)
  */
 void FinalizeLevelLayerSetup(u8 idx) {
-    u32 *table;
-    u32 addr = 0x08189B4C;
-    asm("" : "=r"(table) : "0"(addr));
-    DecompressAndCopyToPalette((u32 *)table[idx], 0x05000000, 0x1C0);
+    DecompressAndCopyToPalette((u32 *)gLevelPaletteTable[idx], 0x05000000, 0x1C0);
 }
 /**
- * LoadAndDecompressStream: decompress a data stream from a ROM table entry.
- *
- * Looks up a compressed data pointer from ROM_STREAM_TABLE (0x08189AFC)
- * by index, allocates and decompresses it, stores the raw buffer in
- * gDecompBuffer and sets gStreamPtr to buffer+4 (past the header).
- */
-/**
  * LoadAndDecompressStream: decompress a data stream from ROM table entry.
- * Sets gDecompBuffer and gStreamPtr from ROM_STREAM_TABLE[idx].
+ *
+ * Looks up a compressed data pointer from gStreamDataTable by index,
+ * allocates and decompresses it, stores the raw buffer in gDecompBuffer
+ * and sets gStreamPtr to buffer+4 (past the header).
  */
 void LoadAndDecompressStream(u32 idx) {
-    u32 *table;
-    u32 addr = 0x08189AFC;
-    u32 buf;
-    asm("" : "=r"(table) : "0"(addr));
-    buf = AllocAndDecompress((u32 *)table[idx]);
+    u32 buf = AllocAndDecompress((u32 *)gStreamDataTable[idx]);
     gDecompBuffer = buf;
     gStreamPtr = (u8 *)(buf + 4);
 }
@@ -191,11 +163,7 @@ INCLUDE_ASM("asm/nonmatchings/gfx", DeadCode_0804bb86);
  * Stores pointer in gBuffer_52A4, DMA3-fills with zeros.
  */
 INCLUDE_ASM("asm/nonmatchings/gfx", AllocAndClearBuffer_52A4);
-/*
- * Frees the memory buffer pointed to by the global at 0x030052A4.
- *   no parameters
- *   no return value
- */
+/** FreeBuffer_52A4: frees the memory buffer at gBuffer_52A4. */
 void FreeBuffer_52A4(void) {
     thunk_FUN_0800020c(gBuffer_52A4);
 }
@@ -218,26 +186,20 @@ void VBlankCallback_MapScreen(void);
  * for the world map screen.
  */
 void SetupGfxCallbacks(void) {
-    u32 a0 = 0x030047C0;
-    u32 *vblankCbs;
-    asm("" : "=r"(vblankCbs) : "0"(a0));
-    vblankCbs[0] = (u32)VBlankHandler_WithWindowScroll;
-    vblankCbs[1] = (u32)UpdateBGScrollWithWave;
+    u32 *vblankHandlers = (u32 *)gVBlankCallbackArray;
+    u32 *callbackState;
+    u32 slotIdx;
+    vblankHandlers[0] = (u32)VBlankHandler_WithWindowScroll;
+    vblankHandlers[1] = (u32)UpdateBGScrollWithWave;
 
-    {
-        u32 a1 = 0x03003510;
-        u32 *cbState;
-        asm("" : "=r"(cbState) : "0"(a1));
-        cbState[0x28 / 4] = (u32)ReadKeyInput;
-        cbState[0x2C / 4] = (u32)SoundMain;
-        cbState[0x30 / 4] = (u32)VBlankCallback_MapScreen;
-        cbState[0x34 / 4] = 1;
-        {
-            u32 idx = *((u8 *)cbState + 0x78) - 1;
-            cbState[idx] = 0;
-        }
-        *((u8 *)cbState + 0x79) = 4;
-    }
+    callbackState = (u32 *)0x03003510;
+    callbackState[0x28 / 4] = (u32)ReadKeyInput;
+    callbackState[0x2C / 4] = (u32)SoundMain;
+    callbackState[0x30 / 4] = (u32)VBlankCallback_MapScreen;
+    callbackState[0x34 / 4] = 1;
+    slotIdx = *((u8 *)callbackState + 0x78) - 1;
+    callbackState[slotIdx] = 0;
+    *((u8 *)callbackState + 0x79) = 4;
 }
 INCLUDE_ASM("asm/nonmatchings/gfx", InitWorldMapGfx);
 /**
@@ -248,11 +210,9 @@ INCLUDE_ASM("asm/nonmatchings/gfx", InitWorldMapGfx);
  * dynamically allocated graphics buffers.
  */
 void ShutdownGfxSubsystem(void) {
-    {
-        vu32 *dest = (vu32 *)0x03000814;
-        u32 *src = (u32 *)0x03004C20;
-        *dest = src[1];
-    }
+    vu32 *dest = (vu32 *)0x03000814;
+    u32 *src = (u32 *)0x03004C20;
+    *dest = src[1];
 
     *(vu16 *)0x04000200 &= 0xFFFD; /* REG_IE &= ~INT_HBLANK */
     *(vu16 *)0x04000004 &= 0xFFEF; /* REG_DISPSTAT &= ~HBLANK_IRQ */

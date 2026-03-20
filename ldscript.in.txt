@@ -1,3 +1,17 @@
+/* Data symbols: extern declarations in globals.h resolve to these addresses. */
+gMPlayTable = 0x08118AB4;
+gSongTable = 0x08118AE4;
+gEntityDataTable = 0x081168E8;
+gLevelPaletteTable = 0x08189B4C;
+gStreamDataTable = 0x08189AFC;
+gSoundCmdTable = 0x08117C8C;
+gGameFlagsPtr = 0x03005400;
+gVBlankCallbackArray = 0x030047C0;
+gCallbackStateArray = 0x03003510;
+gOamBuffer0 = 0x03002920;
+gOamBuffer1 = 0x0300293C;
+gOamBuffer6 = 0x03002A8C;
+
 SECTIONS {
     . = 0x8000000;
     ROM : ALIGN(4) {

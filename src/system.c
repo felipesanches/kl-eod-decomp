@@ -1,4 +1,5 @@
 #include "global.h"
+#include "globals.h"
 #include "include_asm.h"
 
 /** Abs: returns absolute value of a signed integer. */
@@ -53,27 +54,20 @@ INCLUDE_ASM("asm/nonmatchings/system", LoadSpriteFrame);
  * then conditionally frees gCollisionMapPtr.
  */
 void thunk_FUN_0800020c(u32);
-void m4aSongNumStart(u32);
+void m4aSongNumStart(u16);
 void FreeAllDecompBuffers(void) {
-    u32 a0 = 0x03004790;
-    u32 *bufs;
-    asm("" : "=r"(bufs) : "0"(a0));
+    u32 *decompBuffers = (u32 *)gDecompBufferCtrl;
 
-    thunk_FUN_0800020c(bufs[1] - 4);
-    thunk_FUN_0800020c(bufs[0] - 4);
-    thunk_FUN_0800020c(bufs[3] - 4);
-    thunk_FUN_0800020c(bufs[2] - 4);
-    thunk_FUN_0800020c(bufs[5] - 4);
-    thunk_FUN_0800020c(bufs[4] - 4);
+    thunk_FUN_0800020c(decompBuffers[1] - 4);
+    thunk_FUN_0800020c(decompBuffers[0] - 4);
+    thunk_FUN_0800020c(decompBuffers[3] - 4);
+    thunk_FUN_0800020c(decompBuffers[2] - 4);
+    thunk_FUN_0800020c(decompBuffers[5] - 4);
+    thunk_FUN_0800020c(decompBuffers[4] - 4);
 
-    {
-        u32 a1 = 0x03005290;
-        u32 *collisionPtr;
-        asm("" : "=r"(collisionPtr) : "0"(a1));
-        if (*collisionPtr != 0) {
-            thunk_FUN_0800020c(*collisionPtr - 4);
-            *collisionPtr = 0;
-        }
+    if (gCollisionMapPtr != 0) {
+        thunk_FUN_0800020c(gCollisionMapPtr - 4);
+        gCollisionMapPtr = 0;
     }
 
     m4aSongNumStart(0x8D);
@@ -88,9 +82,7 @@ void FreeAllDecompBuffers(void) {
  */
 s16 FixedMul8(s16 a, s16 b) {
     s32 result = (s32)a * (s32)b;
-    register s32 shifted asm("r1");
-    shifted = result;
-    asm("" : "+r"(shifted));
+    register s32 shifted asm("r1") = result;
     if (result < 0)
         shifted += 0xFF;
     return (s16)(shifted >> 8);

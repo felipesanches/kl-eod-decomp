@@ -1,4 +1,5 @@
 #include "global.h"
+#include "globals.h"
 #include "include_asm.h"
 
 INCLUDE_ASM("asm/nonmatchings/engine", VBlankHandler_ModeA);
@@ -43,66 +44,51 @@ INCLUDE_ASM("asm/nonmatchings/engine", ResetVideoRegisters); /* RenderFrame — 
  * ClearVideoState: zeroes all 99 OAM shadow entries then calls InitOamEntries.
  */
 void ClearVideoState(void) {
-    register u32 *p asm("r0");
-    register s32 i asm("r1");
-    register s32 zero asm("r2");
-    u32 a = 0x03002920;
-
-    asm("" : "=r"(p) : "0"(a));
-    i = 0x63;
-    zero = 0;
+    register u32 *oamEntry asm("r0") = (u32 *)gOamBuffer0;
+    register s32 entryCount asm("r1") = 0x63;
+    register s32 zeroFill asm("r2") = 0;
     do {
-        s32 j = 0x1C;
+        s32 bytesLeft = 0x1C;
         do {
-            p++;
-            j -= 4;
-            *p = zero;
-        } while (j != 0);
-        i--;
-    } while (i != 0);
+            oamEntry++;
+            bytesLeft -= 4;
+            *oamEntry = zeroFill;
+        } while (bytesLeft != 0);
+        entryCount--;
+    } while (entryCount != 0);
     InitOamEntries();
 }
 /**
  * ClearOamBufferExtended: zero OAM shadow buffer entries 1-98.
  */
 void ClearOamBufferExtended(void) {
-    register u32 *p asm("r0");
-    register s32 i asm("r1");
-    register s32 zero asm("r2");
-    u32 a = 0x0300293C;
-
-    asm("" : "=r"(p) : "0"(a));
-    i = 0x62;
-    zero = 0;
+    register u32 *oamEntry asm("r0") = (u32 *)gOamBuffer1;
+    register s32 entryCount asm("r1") = 0x62;
+    register s32 zeroFill asm("r2") = 0;
     do {
-        s32 j = 0x1C;
+        s32 bytesLeft = 0x1C;
         do {
-            p++;
-            j -= 4;
-            *p = zero;
-        } while (j != 0);
-        i--;
-    } while (i != 0);
+            oamEntry++;
+            bytesLeft -= 4;
+            *oamEntry = zeroFill;
+        } while (bytesLeft != 0);
+        entryCount--;
+    } while (entryCount != 0);
 }
 /**
  * ClearOamEntries6Plus: zero OAM shadow buffer entries 6-91.
  */
 void ClearOamEntries6Plus(void) {
-    register u32 *p asm("r0");
-    register s32 i asm("r1");
-    register s32 zero asm("r2");
-    u32 a = 0x03002A8C;
-
-    asm("" : "=r"(p) : "0"(a));
-    i = 0x56;
-    zero = 0;
+    register u32 *oamEntry asm("r0") = (u32 *)gOamBuffer6;
+    register s32 entryCount asm("r1") = 0x56;
+    register s32 zeroFill asm("r2") = 0;
     do {
-        s32 j = 0x1C;
+        s32 bytesLeft = 0x1C;
         do {
-            p++;
-            j -= 4;
-            *p = zero;
-        } while (j != 0);
-        i--;
-    } while (i != 0);
+            oamEntry++;
+            bytesLeft -= 4;
+            *oamEntry = zeroFill;
+        } while (bytesLeft != 0);
+        entryCount--;
+    } while (entryCount != 0);
 }
