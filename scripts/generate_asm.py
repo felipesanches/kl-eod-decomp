@@ -1074,18 +1074,6 @@ def _convert_trailing_data(func_lines: list[str], addresses: list[int],
             byte_offset_from_label += line_size
             continue
 
-        # --- Truncated .byte → extend to .4byte ---
-        if ".byte" in s and not _is_label_line(s):
-            byte_count = s.split(".byte", 1)[1].count(",") + 1
-            if byte_count == 2 and current_label_addr is not None:
-                rom_off = (current_label_addr + byte_offset_from_label
-                           - rom_base)
-                if 0 <= rom_off and rom_off + 4 <= len(rom_data):
-                    word = _rom_word(rom_data, rom_off)
-                    if _is_gba_pointer(word, len(rom_data)):
-                        result[i] = f"\t.4byte 0x{word:08X}\n"
-                        changed = True
-
         byte_offset_from_label += line_size
 
     return result if changed else func_lines
@@ -1136,8 +1124,11 @@ def _apply_data_regions(func_lines: list[str], func_addr: int,
         addresses = _compute_addresses_anchored(func_lines, func_addr,
                                                 rom_data)
 
-    # Pass 4: convert remaining instruction lines after the last return.
-    return _convert_trailing_data(func_lines, addresses, rom_data)
+    # Pass 4 (_convert_trailing_data) is disabled — its address computation
+    # is unreliable for non-word-aligned functions, producing wrong literal
+    # pool values.  The pointer-pair passes (1-3) handle the bulk of
+    # data-as-code conversion with ROM-verified addresses.
+    return func_lines
 
 
 def _write_asm_files(merged_entries, libgcc_lines, pre_func):
@@ -1519,12 +1510,28 @@ def _apply_fixups():
     # .4byte already covers the literal pool word).
     dc_path = os.path.join(nm_root, "gfx", "FUN_0804bb86.s")
     if os.path.exists(dc_path):
+        # Check if FreeGfxBuffer is compiled from C (not INCLUDE_ASM).
+        # If so, the C compiler emits the full .4byte 0x030034A0 and
+        # this stub must be empty.  If FreeGfxBuffer is still INCLUDE_ASM,
+        # its .byte only covers 2 bytes and we need .2byte 0x0300 here.
+        gfx_c = os.path.join(ROOT, "src", "gfx.c")
+        freegfx_is_c = False
+        if os.path.exists(gfx_c):
+            with open(gfx_c) as f:
+                for line in f:
+                    if "void FreeGfxBuffer" in line and "{" in line:
+                        freegfx_is_c = True
+                        break
+
         with open(dc_path, "w") as f:
-            f.write("\t.global FUN_0804bb86\n"
-                    "FUN_0804bb86:\n"
-                    "@ Absorbed into FreeGfxBuffer literal pool"
-                    " (.4byte 0x030034A0)\n")
-        print("  Emptied FUN_0804bb86.s (absorbed into FreeGfxBuffer literal pool)")
+            if freegfx_is_c:
+                f.write("\t.global FUN_0804bb86\n"
+                        "FUN_0804bb86:\n")
+            else:
+                f.write("\t.global FUN_0804bb86\n"
+                        "FUN_0804bb86:\n"
+                        "\t.2byte 0x0300\n")
+        print("  Fixed FUN_0804bb86.s (literal pool stub)")
 
     # Add .global for labels referenced across compilation units
     for label in ("_080482B4", "_0804831C"):
@@ -1540,6 +1547,139 @@ def _apply_fixups():
                     with open(fpath, "w") as f:
                         f.write(content)
                     print(f"  Added .global {label} in {os.path.relpath(fpath, ROOT)}")
+
+
+
+_LDR_POOL_INST_RE = re.compile(
+    r"^(\s*)ldr\s+(\w+),\s*(_[0-9A-Fa-f]+)\s*(@.*)"
+)
+
+
+def _fix_ldr_alignment():
+    """Convert ldr PC-relative to .inst.n for non-word-aligned functions.
+
+    Newer GNU as rejects Thumb ldr targets at non-word-aligned section
+    offsets.  For functions using non_word_aligned_thumb_func_start,
+    the section offset is unknown — ALL pool labels may be misaligned.
+    Convert their ldr references to raw .inst.n halfword encodings
+    computed from the Thumb6 format.
+    """
+    nm_root = os.path.join(ROOT, "asm", "nonmatchings")
+    count = 0
+    _RD_MAP = {f"r{n}": n for n in range(8)}
+
+    for mod in os.listdir(nm_root):
+        mod_dir = os.path.join(nm_root, mod)
+        if not os.path.isdir(mod_dir):
+            continue
+        for fname in os.listdir(mod_dir):
+            if not fname.endswith(".s"):
+                continue
+            fpath = os.path.join(mod_dir, fname)
+            with open(fpath) as f:
+                lines = f.readlines()
+
+            is_nwa = any(
+                "non_word_aligned_thumb_func_start" in l for l in lines[:3])
+            if not is_nwa:
+                continue
+
+            # Collect all ldr pool label names.
+            pool_labels = set()
+            for line in lines:
+                m = _LDR_POOL_INST_RE.match(line)
+                if m:
+                    pool_labels.add(m.group(3))
+            if not pool_labels:
+                continue
+
+            # Compute byte offsets using _line_byte_size_strict (which
+            # correctly handles label lines with trailing comments as
+            # 0 bytes) and counts .inst/.inst.n as 2 bytes.
+            offsets = []
+            off = 0
+            for line in lines:
+                offsets.append(off)
+                s = line.strip()
+                if s.startswith(".inst"):
+                    off += 2
+                else:
+                    off += _line_byte_size_strict(s)
+
+            # Build label → ROM address map from embedded label addresses.
+            label_rom = {}
+            for i, line in enumerate(lines):
+                s = line.strip()
+                m = _ADDR_LABEL_RE.match(s)
+                if m:
+                    label_rom["_" + m.group(1)] = int(m.group(1), 16)
+
+            # Compute ROM addresses for each line using anchor labels.
+            # Each _XXXXXXXX: label provides an exact ROM↔offset mapping.
+            # Between anchors, increment by line byte size.
+            rom_addrs = [0] * len(lines)
+            rom_addr = 0
+            for i, line in enumerate(lines):
+                s = line.strip()
+                m = _ADDR_LABEL_RE.match(s)
+                if m:
+                    rom_addr = int(m.group(1), 16)
+                else:
+                    m2 = _FUNC_LABEL_ADDR_RE.match(s)
+                    if m2:
+                        rom_addr = int(m2.group(1), 16)
+                rom_addrs[i] = rom_addr
+                if s.startswith(".inst"):
+                    rom_addr += 2
+                else:
+                    rom_addr += _line_byte_size_strict(s)
+
+            # Read ROM data for encoding verification.
+            with open(os.path.join(ROOT, BASEROM), "rb") as rf:
+                rom = rf.read()
+            rom_base = 0x08000000
+
+            # Convert ldr instructions using ROM addresses, verified
+            # against actual ROM bytes.
+            new_lines = []
+            changed = False
+            for i, line in enumerate(lines):
+                m = _LDR_POOL_INST_RE.match(line)
+                if m:
+                    indent, rd, label, comment = (
+                        m.group(1), m.group(2), m.group(3), m.group(4))
+                    if label in pool_labels and rd in _RD_MAP:
+                        # Try ROM addresses at computed position ±2.
+                        ldr_rom_addr = rom_addrs[i]
+                        best_enc = None
+                        for delta in (0, -2, +2, -4, +4):
+                            test_addr = ldr_rom_addr + delta
+                            rom_off = test_addr - rom_base
+                            if 0 <= rom_off < len(rom) - 1:
+                                hw = struct.unpack_from(
+                                    "<H", rom, rom_off)[0]
+                                # Valid Thumb6 ldr: 0100 1 xxx xxxx xxxx
+                                if (hw >> 11) == 0b01001:
+                                    rd_bits = (hw >> 8) & 7
+                                    if rd_bits == _RD_MAP[rd]:
+                                        best_enc = hw
+                                        break
+                        if best_enc is not None:
+                            new_lines.append(
+                                f"{indent}.inst.n 0x{best_enc:04X}"
+                                f" @ ldr {rd}, {label} {comment}\n")
+                            changed = True
+                            count += 1
+                            continue
+                new_lines.append(line)
+
+            if changed:
+                with open(fpath, "w") as f:
+                    f.writelines(new_lines)
+
+    if count:
+        print(f"  Converted {count} ldr instructions to .inst.n"
+              f" (non-word-aligned pool targets)")
 
 
 def _apply_renames():
@@ -2420,6 +2560,9 @@ def main():
 
     print("[8/9] Applying renames...")
     _apply_renames()
+
+    print("[8.5/9] Fixing ldr alignment for non-word-aligned functions...")
+    _fix_ldr_alignment()
 
     print("[9/9] Generating data.s & moving matched functions...")
     _generate_data_s()

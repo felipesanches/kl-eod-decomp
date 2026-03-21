@@ -154,7 +154,9 @@ INCLUDE_ASM("asm/nonmatchings/gfx", AllocAndClearGfxBuffer);
 /**
  * FreeGfxBuffer: frees the GFX buffer struct at gGfxBufferPtr.
  */
-INCLUDE_ASM("asm/nonmatchings/gfx", FreeGfxBuffer);
+void FreeGfxBuffer(void) {
+    thunk_FUN_0800020c((void *)gGfxBufferPtr);
+}
 
 INCLUDE_ASM("asm/nonmatchings/gfx", DeadCode_0804bb86);
 
