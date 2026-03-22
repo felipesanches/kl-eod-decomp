@@ -279,9 +279,14 @@ void DispatchStreamCommand_C0EC(void) {
 INCLUDE_ASM("asm/nonmatchings/gfx", DmaSpriteToObjVram);
 /**
  * StreamCmd_DmaSpriteData: reads sprite entry/frame from stream, DMAs to OBJ VRAM.
- * Also contains SetSpriteTableFromIndex (0x0804C218) as an embedded sub-function.
  */
-INCLUDE_ASM("asm/nonmatchings/gfx", StreamCmd_DmaSpriteData);
+void StreamCmd_DmaSpriteData(void) {
+    u8 *ptr = gStreamPtr;
+    u8 a = ptr[2];
+    u8 b = ptr[3];
+    gStreamPtr = ptr + 4;
+    DmaSpriteToObjVram(a, b);
+}
 INCLUDE_ASM("asm/nonmatchings/gfx", SetSpriteTableFromIndex);
 /*
  * Reads a command byte from the data stream and processes it via SetSpriteTableFromIndex.

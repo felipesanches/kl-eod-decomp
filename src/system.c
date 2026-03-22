@@ -12,7 +12,15 @@ s32 ReturnOne(void) {
     return 1;
 }
 /** StrCpy: copies a null-terminated string from src to dst. */
-INCLUDE_ASM("asm/nonmatchings/system", StrCpy);
+void StrCpy(u8 *dst, u8 *src) {
+    register u32 c asm("r2");
+    do {
+        c = *src;
+        *dst = c;
+        dst++;
+        src++;
+    } while (c != 0);
+}
 
 /**
  * AgbMain: game entry point.

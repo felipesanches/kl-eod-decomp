@@ -20,7 +20,14 @@ s16 FixedReciprocal(s16 arg0) {
 }
 
 /** FixedMul4: 4.4 fixed-point signed multiply (s16*s16 >> 4). */
-INCLUDE_ASM("asm/nonmatchings/math", FixedMul4);
+s16 FixedMul4(s16 a, s16 b) {
+    s32 result = (s32)a * (s32)b;
+    register s32 shifted asm("r1") = result;
+    if (result < 0) {
+        shifted += 0x0F;
+    }
+    return (s16)(shifted >> 4);
+}
 
 /**
  * FixedMulShift4: fixed-point multiply with 4-bit left shift.
