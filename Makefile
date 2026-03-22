@@ -121,7 +121,14 @@ $(OBJ_DIR)/m4a_1_funcs.s: $(C_SUBDIR)/m4a_1.c
 	@$(CC1) $(TST_CC1FLAGS) -o $(OBJ_DIR)/m4a_1_raw.s $(OBJ_DIR)/m4a_1.i
 	@sed '/^@/d;/^\.code/d;/^\.gcc2_compiled/d;/^\.text$$/d;/^\.Lfe/d;/^[[:space:]]*\.size/d;/macros\.inc/d;s/\.L\([0-9]\)/.Lm4a1_\1/g' $(OBJ_DIR)/m4a_1_raw.s > $@
 
-$(C_BUILDDIR)/m4a.o: $(OBJ_DIR)/m4a_1_funcs.s
+# Compile m4a with old_agbcc — Nintendo's MusicPlayer2000 was prebuilt
+# with an older GCC as part of the GBA SDK.
+$(C_BUILDDIR)/m4a.o: $(C_SUBDIR)/m4a.c $(OBJ_DIR)/m4a_1_funcs.s
+	@echo "$(CC1_OLD) <m4a flags> -o $@ $<"
+	@$(CPP) $(CPPFLAGS) $< -o $(C_BUILDDIR)/m4a.i
+	@$(CC1_OLD) -mthumb-interwork -O2 -o $(C_BUILDDIR)/m4a.s $(C_BUILDDIR)/m4a.i
+	@printf ".text\n\t.align\t2, 0\n" >> $(C_BUILDDIR)/m4a.s
+	@$(AS) $(ASFLAGS) -o $@ $(C_BUILDDIR)/m4a.s
 
 # Compile C files (with INCLUDE_ASM support)
 $(C_BUILDDIR)/%.o: $(C_SUBDIR)/%.c

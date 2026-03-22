@@ -141,6 +141,22 @@ Each `src/*.c` file contains `INCLUDE_ASM(...)` macros that inline assembly for 
 
     A successful match prints `klonoa-eod.gba: OK`.
 
+## Compiler Boundaries
+
+The ROM was not built with a single compiler. Three configurations are needed for matching:
+
+| Source file | Compiler | Flags |
+|-------------|----------|-------|
+| `src/*.c` (except m4a) | `agbcc` | `-mthumb-interwork -O2 -fhex-asm -fprologue-bugfix` |
+| `src/m4a.c` | `old_agbcc` | `-mthumb-interwork -O2` |
+| `src/m4a_1.c` | `old_agbcc` | `-mthumb-interwork -O2 -ftst` |
+
+**Game code** uses a [custom agbcc fork](https://github.com/Dream-Atelier/agbcc) with `-fprologue-bugfix` (fixes unnecessary `lr` saves in leaf functions) and `-fhex-asm`.
+
+**MusicPlayer2000** (`m4a.c`) was originally compiled with an older GCC (`old_agbcc`) as part of Nintendo's GBA SDK. The two compilers differ in register allocation — for example, `old_agbcc` assigns the first literal pool load to **r2**, while `agbcc` assigns it to **r3**.
+
+**TST functions** (`m4a_1.c`) use the `tst` instruction instead of `ands + cmp`. Currently only `VoiceLookupAndApply` is decompiled here; six m4a functions in the ROM use this pattern. The file is compiled with `old_agbcc -ftst`, pre-compiled into `build/m4a_1_funcs.s`, and included into `m4a.c` via `asm(".include ...")`.
+
 ## Discord
 
 Talk with us in the Discord servers linked below:
@@ -159,9 +175,3 @@ To set up CI, add this [repository secret](https://docs.github.com/en/actions/se
 | Secret        | Description                             |
 |---------------|-----------------------------------------|
 | `STORAGE_URL` | URL to a `.zip` file containing the ROM |
-
-## Status
-
-- **Compiler**: agbcc (GCC 2.95) — confirmed via function epilogue analysis
-- **Build**: Matching (`klonoa-eod.gba: OK`)
-- **Functions**: 503 total, 29 decompiled to C

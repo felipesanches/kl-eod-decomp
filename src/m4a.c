@@ -332,7 +332,7 @@ void SoundInit(void) {
  */
 void MPlayStart(u32, u32);
 void m4aSongNumStart(u16 idx) {
-    register const struct MusicPlayer *mplayTable asm("r2") = gMPlayTable;
+    const struct MusicPlayer *mplayTable = gMPlayTable;
     const struct Song *songTable = gSongTable;
     const struct Song *song = &songTable[idx];
     u16 playerIdx = song->ms;
@@ -362,7 +362,7 @@ INCLUDE_ASM("asm/nonmatchings/m4a", m4aSongNumLoad);
  * playing this song's header, calls MPlayStop to halt playback.
  */
 void m4aMPlayCommand(u16 idx) {
-    register const struct MusicPlayer *mplayTable asm("r2") = gMPlayTable;
+    const struct MusicPlayer *mplayTable = gMPlayTable;
     const struct Song *songTable = gSongTable;
     const struct Song *song = &songTable[idx];
     u16 playerIdx = song->ms;
@@ -381,7 +381,7 @@ void m4aMPlayCommand(u16 idx) {
  */
 void MPlayChannelReset(u32 *);
 void m4aSongNumStop(u16 idx) {
-    register const struct MusicPlayer *mplayTable asm("r2") = gMPlayTable;
+    const struct MusicPlayer *mplayTable = gMPlayTable;
     const struct Song *songTable = gSongTable;
     const struct Song *song = &songTable[idx];
     u16 playerIdx = song->ms;
