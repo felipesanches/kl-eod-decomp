@@ -1465,7 +1465,79 @@ def _manual_split_leaf(nm_root, module, parent_fname, trigger_instr,
     print(f"  Manual split: {parent_fname} -> {new_name}")
 
 
-def _apply_fixups():
+def _fix_misplaced_literal_pools(nm_root, module_funcs):
+    """Fix sub-functions whose first content is a misplaced literal pool.
+
+    When ``_detect_sub_functions`` splits inside a literal pool word
+    (e.g. at the upper halfword of a ``.4byte``), the preceding function
+    loses its literal pool and the sub-function starts with data that
+    isn't real code.
+
+    Scans consecutive function pairs (using *module_funcs* ordering from
+    ``_write_asm_files``, since renames have not been applied yet).  When
+    a function's first content is ``.4byte`` and the preceding function
+    has a ``ldr rN, [pc, #imm]`` referencing the same value, moves the
+    ``.4byte`` into the preceding function.
+    """
+    fixed_count = 0
+    for module, func_list in module_funcs.items():
+        mod_dir = os.path.join(nm_root, module)
+        if not os.path.isdir(mod_dir):
+            continue
+
+        for idx in range(len(func_list) - 1):
+            _, prev_name = func_list[idx]
+            _, curr_name = func_list[idx + 1]
+            curr_path = os.path.join(mod_dir, f"{curr_name}.s")
+            prev_path = os.path.join(mod_dir, f"{prev_name}.s")
+            if not os.path.exists(curr_path) or not os.path.exists(prev_path):
+                continue
+            with open(curr_path) as f:
+                curr_lines = f.readlines()
+            # Check if the function starts with .4byte after its header
+            data_line_idx = None
+            for i, line in enumerate(curr_lines):
+                s = line.strip()
+                if not s or s.startswith("@"):
+                    continue
+                if "thumb_func_start" in s or (
+                    ":" in s and not s.startswith(("\t", " "))
+                ):
+                    continue
+                if ".4byte" in s:
+                    data_line_idx = i
+                break
+            if data_line_idx is None:
+                continue
+            pool_value = curr_lines[data_line_idx].strip()
+
+            # Check if the preceding function references this pool value
+            with open(prev_path) as f:
+                prev_text = f.read()
+            pool_word = pool_value.split()[-1]  # e.g. "0x03004D84"
+            if f"={pool_word}" not in prev_text:
+                continue
+
+            # Move the .4byte from the sub-function to the preceding function
+            with open(prev_path) as f:
+                prev_lines = f.readlines()
+            prev_lines.append(f"\t{pool_value}\n")
+            with open(prev_path, "w") as f:
+                f.writelines(prev_lines)
+
+            # Remove the .4byte from the sub-function
+            del curr_lines[data_line_idx]
+            with open(curr_path, "w") as f:
+                f.writelines(curr_lines)
+
+            fixed_count += 1
+            print(f"  Fixed misplaced pool: moved {pool_value} "
+                  f"from {curr_name}.s to {prev_name}.s")
+    if fixed_count:
+        print(f"  Fixed {fixed_count} misplaced literal pool(s)")
+
+
+def _apply_fixups(module_funcs=None):
     """Apply known assembly fixups for matching."""
     nm_root = os.path.join(ROOT, "asm", "nonmatchings")
 
@@ -1532,6 +1604,13 @@ def _apply_fixups():
                         "FUN_0804bb86:\n"
                         "\t.2byte 0x0300\n")
         print("  Fixed FUN_0804bb86.s (literal pool stub)")
+
+    # Fix misplaced literal pools: when a sub-function's first content
+    # is a .4byte that is actually the preceding function's literal pool,
+    # move the pool data into the preceding function and adjust the
+    # sub-function to start at the real code.
+    if module_funcs:
+        _fix_misplaced_literal_pools(nm_root, module_funcs)
 
     # Add .global for labels referenced across compilation units
     for label in ("_080482B4", "_0804831C"):
@@ -2550,7 +2629,7 @@ def main():
     _update_c_sources(merged_groups, module_funcs)
 
     print("[6/9] Applying fixups...")
-    _apply_fixups()
+    _apply_fixups(module_funcs)
 
     print("[6.5/9] Fixing .2byte branch encodings...")
     _fix_2byte_in_split_files()
