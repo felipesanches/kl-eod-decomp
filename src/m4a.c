@@ -3,6 +3,9 @@
 #include "globals.h"
 #include "include_asm.h"
 
+extern char gNumMusicPlayers[];
+#define NUM_MUSIC_PLAYERS ((u16)gNumMusicPlayers)
+
 /* ══════════════════════════════════════════════════════════════════════
  * m4a — Nintendo MusicPlayer2000 ("Sappy") sound engine
  *
@@ -405,7 +408,21 @@ void m4aSongNumStop(u16 idx) {
  * m4aMPlayAllStop: stops all 4 music player instances.
  * Iterates ROM_MUSIC_TABLE (0x08118AB4), calling MPlayStop on each.
  */
-INCLUDE_ASM("asm/nonmatchings/m4a", m4aMPlayAllStop);
+void m4aMPlayAllStop(void) {
+    u16 n;
+    s32 count;
+    const struct MusicPlayer *table;
+    n = NUM_MUSIC_PLAYERS;
+    if (n == 0)
+        return;
+    table = gMPlayTable;
+    count = n;
+    do {
+        MPlayStop(table->info);
+        table++;
+        count--;
+    } while (count != 0);
+}
 /** StopSoundChannel: wrapper that calls MPlayChannelReset to stop a channel. */
 void StopSoundChannel(u32 channel) {
     MPlayChannelReset(channel);
@@ -419,7 +436,21 @@ void StopSoundChannel(u32 channel) {
  * each frame, ensuring audio stays in sync with display refresh.
  *   23 lines, calls MPlayChannelReset
  */
-INCLUDE_ASM("asm/nonmatchings/m4a", StopSoundEffects);
+void StopSoundEffects(void) {
+    u16 n;
+    s32 count;
+    const struct MusicPlayer *table;
+    n = NUM_MUSIC_PLAYERS;
+    if (n == 0)
+        return;
+    table = gMPlayTable;
+    count = n;
+    do {
+        MPlayChannelReset(table->info);
+        table++;
+        count--;
+    } while (count != 0);
+}
 /*
  * SappyStateCheck: verify the Sappy engine is properly initialized.
  * Checks for SAPPY_MAGIC (0x68736D53 = "Smsh" in little-endian)
@@ -450,7 +481,10 @@ INCLUDE_ASM("asm/nonmatchings/m4a", SoundEffectTrigger);
  *       0x040000C6, 0x040000D0
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", SoundHardwareInit);
-INCLUDE_ASM("asm/nonmatchings/m4a", SoundHardwareInit_Tail);
+asm(".align 2, 0");
+void SoundHardwareInit_Tail(void) {
+    asm("swi 0x2A");
+}
 /*
  * Plays a sound effect using the BGM MusicPlayer context (gMPlayInfo_BGM).
  * Used for music-priority sounds that share the BGM mixer.
