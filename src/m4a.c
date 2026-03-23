@@ -63,27 +63,22 @@ INCLUDE_ASM("asm/nonmatchings/m4a", DmaControllerInit);
  *   73 lines, leaf function
  *   refs: gSoundInfo (0x0300081C), gStreamPtr (0x03004D84)
  */
-void SoundInfoInit(void)
-{
+void SoundInfoInit(void) {
     u8 *soundInfo = (u8 *)*(u32 *)0x0300081C;
     u16 uval = *(u16 *)(soundInfo + 0x14);
     s16 val = *(s16 *)(soundInfo + 0x14);
 
-    if (val <= 0)
-    {
+    if (val <= 0) {
         *(u16 *)(soundInfo + 0x14) = 0;
         *(volatile u8 *)(soundInfo + 0x16) = *(volatile u8 *)(soundInfo + 0x16) & 0x7F;
         return;
     }
 
-    if ((u16)(uval - 1) <= 14)
-    {
+    if ((u16)(uval - 1) <= 14) {
         u16 *p = (u16 *)0x03003430;
         p[0x26 / 2] += 1;
         *(u16 *)(soundInfo + 0x14) -= 1;
-    }
-    else
-    {
+    } else {
         u16 *p = (u16 *)0x03003430;
         p[0x26 / 2] += 2;
         *(u16 *)(soundInfo + 0x14) -= 2;
@@ -344,7 +339,37 @@ INCLUDE_ASM("asm/nonmatchings/m4a", MPlayChannelReset);
  *   calls: BitUnPack, SoundHardwareInit, DirectSoundFifoSetup
  *   refs: ROM_MUSIC_TABLE (0x08118AB4)
  */
-INCLUDE_ASM("asm/nonmatchings/m4a", m4aSoundInit);
+extern char SoundMainRAM[];
+void BitUnPack(u32, u32, u32);
+void DirectSoundFifoSetup(u32);
+void SoundHardwareInit(u32);
+void MPlayOpen(u32 *a, u8 *b, u8 c);
+
+void m4aSoundInit(void) {
+    s32 i;
+
+    BitUnPack((u32)SoundMainRAM & ~1, 0x03000388, 0x04000100);
+    DirectSoundFifoSetup(0x030054A0);
+    SoundHardwareInit(0x030064E0);
+    m4aSoundMode(0x0094F800);
+
+    {
+        u16 count = NUM_MUSIC_PLAYERS;
+        if (count != 0) {
+            u8 *table = (u8 *)0x08118AB4;
+            i = count;
+
+            do {
+                u32 *mplayInfo = *(u32 **)table;
+                MPlayOpen(mplayInfo, (u8 *)*(u32 *)(table + 4), *(u8 *)(table + 8));
+                ((u8 *)mplayInfo)[0x0B] = *(u16 *)(table + 0x0A);
+                *(u32 *)((u8 *)mplayInfo + 0x18) = 0x030066A0;
+                table += 0x0C;
+                i--;
+            } while (i != 0);
+        }
+    }
+}
 /*
  * Wrapper that calls InitSoundEngine to initialize
  * the MusicPlayer2000 sound engine.
@@ -556,7 +581,73 @@ INCLUDE_ASM("asm/nonmatchings/m4a", SampleFreqSet);
  *   HW: REG_SOUNDBIAS (0x04000089)
  *   calls: SampleFreqSet, m4aSoundShutdown (m4aSoundVSyncOff)
  */
-INCLUDE_ASM("asm/nonmatchings/m4a", m4aSoundMode);
+void m4aSoundMode(u32 mode) {
+    u32 *soundInfo;
+    u32 magic;
+    u32 temp;
+
+    soundInfo = *(u32 **)0x03007FF0;
+    magic = soundInfo[0];
+
+    if (magic != SAPPY_MAGIC)
+        return;
+
+    soundInfo[0] = magic + 1;
+
+    temp = mode & 0xFF;
+    if (temp) {
+        temp &= 0x7F;
+        ((u8 *)soundInfo)[5] = temp;
+    }
+
+    temp = 0xF0 << 4;
+    temp &= mode;
+    if (temp) {
+        ((u8 *)soundInfo)[6] = temp >> 8;
+        temp = 0x0C;
+        {
+            u8 *ch = (u8 *)soundInfo + 0x50;
+            u8 zero = 0;
+            do {
+                *ch = zero;
+                temp -= 1;
+                ch += 0x40;
+            } while (temp != 0);
+        }
+    }
+
+    temp = 0xF0 << 8;
+    temp &= mode;
+    if (temp) {
+        ((u8 *)soundInfo)[7] = temp >> 12;
+    }
+
+    temp = 0xB0 << 16;
+    temp &= mode;
+    if (temp) {
+        u32 shifted;
+        shifted = 0xC0 << 14;
+        shifted &= temp;
+        temp = shifted >> 14;
+        {
+            vu8 *bias = (vu8 *)0x04000089;
+            u8 val = *bias;
+            u8 r0 = 0x3F;
+            r0 &= val;
+            r0 |= temp;
+            *bias = r0;
+        }
+    }
+
+    temp = 0xF0 << 12;
+    temp &= mode;
+    if (temp) {
+        m4aSoundVSyncOff();
+        SampleFreqSet(temp);
+    }
+
+    soundInfo[0] = SAPPY_MAGIC;
+}
 /*
  * SoundPlatformDetect: detect audio platform capabilities.
  * Checks hardware version and adjusts sound parameters accordingly.
@@ -673,14 +764,53 @@ void m4aSoundVSyncOn(void) {
  * sound events and trigger the next DMA cycle.
  *   63 lines, calls PlaySoundWithContext_DC
  */
-INCLUDE_ASM("asm/nonmatchings/m4a", MPlayOpen);
-/*
- * MPlayOpen: load and open music player data from ROM.
- * Reads song header from ROM, allocates channels, loads instrument
- * data, and prepares the MusicPlayer for playback.
- *   121 lines
- *   calls: SoundContextRef, m4aSoundMode
+/**
+ * MPlayOpen: initialize a MusicPlayerInfo and register it in the SoundInfo
+ * linked list.  Clamps trackCount to 16, zeroes each track's flags byte,
+ * and chains the player into the MPlayMain callback list.
  */
+void TrackStop(void);
+void MPlayOpen(u32 *mplayInfo, u8 *tracks, u8 trackCount) {
+    u32 *soundInfo;
+    u32 ident;
+
+    if (trackCount == 0)
+        return;
+
+    if (trackCount > 16)
+        trackCount = 16;
+
+    soundInfo = *(u32 **)0x03007FF0;
+    ident = soundInfo[0];
+
+    if (ident != SAPPY_MAGIC)
+        return;
+
+    soundInfo[0] = ident + 1;
+
+    PlaySoundWithContext_DC((u32)mplayInfo);
+
+    mplayInfo[0x2C / 4] = (u32)tracks;
+    ((u8 *)mplayInfo)[0x08] = trackCount;
+    mplayInfo[0x04 / 4] = 0x80000000;
+
+    while (trackCount != 0) {
+        tracks[0x00] = 0;
+        trackCount--;
+        tracks += 0x50;
+    }
+
+    if (soundInfo[0x20 / 4] != 0) {
+        mplayInfo[0x38 / 4] = soundInfo[0x20 / 4];
+        mplayInfo[0x3C / 4] = soundInfo[0x24 / 4];
+        soundInfo[0x20 / 4] = 0;
+    }
+
+    soundInfo[0x24 / 4] = (u32)mplayInfo;
+    soundInfo[0x20 / 4] = (u32)TrackStop;
+    soundInfo[0] = SAPPY_MAGIC;
+    mplayInfo[0x34 / 4] = SAPPY_MAGIC;
+}
 INCLUDE_ASM("asm/nonmatchings/m4a", MPlayStart);
 /*
  * MPlayChannelUpdate: update a single music player channel.
@@ -741,7 +871,30 @@ INCLUDE_ASM("asm/nonmatchings/m4a", CgbSound);
  *       REG_SOUND3CNT_X (0x04000070), REG_SOUND4CNT_H (0x04000079)
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", MidiKeyToCgbFreq);
-INCLUDE_ASM("asm/nonmatchings/m4a", FUN_08050a44);
+/**
+ * FUN_08050a44 (CgbOscOff): silence a CGB sound channel.
+ * Writes stop values to the appropriate hardware registers
+ * for channels 1-4 (Square1, Square2, Wave, Noise).
+ */
+void FUN_08050a44(u8 channel) {
+    switch (channel) {
+        case 1:
+            *(vu8 *)0x04000063 = 0x08;
+            *(vu8 *)0x04000065 = 0x80;
+            break;
+        case 2:
+            *(vu8 *)0x04000069 = 0x08;
+            *(vu8 *)0x0400006D = 0x80;
+            break;
+        case 3:
+            *(vu8 *)0x04000070 = 0x00;
+            break;
+        default:
+            *(vu8 *)0x04000079 = 0x08;
+            *(vu8 *)0x0400007D = 0x80;
+            break;
+    }
+}
 /*
  * CgbLookupUtil: CGB utility lookup for pitch/volume tables.
  *   59 lines, leaf function
@@ -807,18 +960,94 @@ INCLUDE_ASM("asm/nonmatchings/m4a", MidiNoteLookup);
  *   20 lines, leaf function
  */
 INCLUDE_ASM("asm/nonmatchings/m4a", MidiUtilConvert);
-/*
- * MidiCommandEncode1: encode MIDI command (type 1).
- * Packs MIDI event data into the internal command format.
- *   64 lines, calls MidiUtilConvert
+void MidiUtilConvert(u8 *);
+/**
+ * MidiCommandEncode1: iterate active tracks in a MusicPlayerInfo,
+ * write value to track[0x17] for each matching track bit, and call
+ * MidiUtilConvert when value is zero.
  */
-INCLUDE_ASM("asm/nonmatchings/m4a", MidiCommandEncode1);
-/*
- * MidiCommandEncode2: encode MIDI command (type 2).
- * Packs MIDI controller/pitch data into the internal command format.
- *   62 lines, calls MidiUtilConvert
+void MidiCommandEncode1(u32 *player, u16 trackBits, u8 value) {
+    u32 ident;
+    s32 numTracks;
+    u8 *track;
+    u32 mask;
+    u8 val;
+
+    ident = player[0x34 / 4];
+    if (ident != SAPPY_MAGIC)
+        return;
+
+    player[0x34 / 4] = ident + 1;
+
+    numTracks = (s32)(u8)((u8 *)player)[0x08];
+    track = (u8 *)player[0x2C / 4];
+    mask = 1;
+
+    if (numTracks <= 0)
+        goto done;
+
+    val = value;
+
+    while (numTracks > 0) {
+        if (trackBits & mask) {
+            if (track[0x00] & 0x80) {
+                track[0x17] = value;
+                if (val == 0) {
+                    MidiUtilConvert(track);
+                }
+            }
+        }
+        numTracks--;
+        track += 0x50;
+        mask <<= 1;
+    }
+
+done:
+    player[0x34 / 4] = SAPPY_MAGIC;
+}
+/**
+ * MidiCommandEncode2: same as MidiCommandEncode1 but writes to
+ * track[0x19] instead of track[0x17].
  */
-INCLUDE_ASM("asm/nonmatchings/m4a", MidiCommandEncode2);
+void MidiCommandEncode2(u32 *player, u16 trackBits, u8 value) {
+    u32 ident;
+    s32 numTracks;
+    u8 *track;
+    u32 mask;
+    u8 val;
+
+    ident = player[0x34 / 4];
+    if (ident != SAPPY_MAGIC)
+        return;
+
+    player[0x34 / 4] = ident + 1;
+
+    numTracks = (s32)(u8)((u8 *)player)[0x08];
+    track = (u8 *)player[0x2C / 4];
+    mask = 1;
+
+    if (numTracks <= 0)
+        goto done;
+
+    val = value;
+
+    while (numTracks > 0) {
+        if (trackBits & mask) {
+            if (track[0x00] & 0x80) {
+                track[0x19] = value;
+                if (val == 0) {
+                    MidiUtilConvert(track);
+                }
+            }
+        }
+        numTracks--;
+        track += 0x50;
+        mask <<= 1;
+    }
+
+done:
+    player[0x34 / 4] = SAPPY_MAGIC;
+}
 /*
  * MPlayCommandDispatch: music player command dispatcher.
  * Reads a command byte from the track stream and dispatches to the
